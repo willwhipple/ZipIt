@@ -2,11 +2,11 @@
 
 ## What This Is
 
-A personal packing list app for iOS (built with Expo + React Native).
+A personal packing list web app (built with Next.js).
 The app is called **Zip It**.
 The core idea: maintain a master inventory of items tagged to activities,
 describe a trip, and get a tailored packing list generated instantly.
-No AI in Stage 1 — just clean set logic and a great mobile experience.
+No AI in Stage 1 — just clean set logic and a great mobile web experience.
 
 ---
 
@@ -24,9 +24,12 @@ No AI in Stage 1 — just clean set logic and a great mobile experience.
 
 ## UI & Styling Preferences
 
-- Use native iOS navigation components unstyled — do not set custom background colors on the tab bar or stack header. iOS 26 applies liquid glass automatically; overriding with solid colors kills the effect.
-- Use `expo-blur` (BlurView) for custom-built components that should match the native glass aesthetic (modals, FABs, cards).
-- NativeWind for all other layout and styling.
+- Mobile-first layout. Target ~430px max-width, centered on desktop.
+- Tailwind CSS for all layout and styling — no component library.
+- Bottom nav bar is a fixed `nav` element with two tabs (Home | Inventory).
+- Modals are `div` overlays with fixed positioning — no browser `alert()` dialogs.
+- Inline error messages in forms, not popups.
+- Use `min-h-dvh` for full-height layouts (handles mobile browser chrome correctly).
 
 ---
 
@@ -34,13 +37,13 @@ No AI in Stage 1 — just clean set logic and a great mobile experience.
 
 | Layer | Choice |
 |---|---|
-| Framework | Expo (React Native) |
-| Navigation | Expo Router (file-based) |
-| Styling | NativeWind (Tailwind for React Native) |
+| Framework | Next.js 15 (App Router) |
+| Navigation | Next.js App Router (file-based) |
+| Styling | Tailwind CSS v3 |
 | Database | Supabase (Postgres) |
 | Auth | None in Stage 1.0 — added in Stage 1.1 |
 | AI | Google Gemini Flash-Lite (Stage 3 only) |
-| Deployment | Expo Go (dev) → TestFlight → App Store |
+| Deployment | Vercel (free tier) |
 
 ---
 
@@ -308,29 +311,34 @@ Packing List → FAB → "Add Item"
 
 ---
 
-## File Structure (Expo Router)
+## File Structure (Next.js App Router)
 
 ```
 app/
-  _layout.tsx          # Root layout, bottom tab navigator
-  index.tsx            # Home screen
+  layout.tsx              # Root layout + fixed bottom nav (Home | Inventory)
+  page.tsx                # Home screen
+  globals.css             # Tailwind directives
   trip/
-    create.tsx          # Create trip form
-    [id].tsx            # Packing list for a trip
+    create/
+      page.tsx            # Create trip form
+    [id]/
+      page.tsx            # Packing list for a trip
   inventory/
-    index.tsx           # Item list grouped by category
+    page.tsx              # Item list grouped by category
     item/
-      create.tsx        # Add item
-      [id].tsx          # Edit item
+      create/
+        page.tsx          # Add item
+      [id]/
+        page.tsx          # Edit item
   activities/
-    index.tsx           # Activities manager
+    page.tsx              # Activities manager
 
 lib/
-  supabase.ts           # Supabase client
-  generation.ts         # Packing list generation logic
+  supabase.ts             # Supabase client
+  generation.ts           # Packing list generation logic
 
 types/
-  index.ts              # Shared TypeScript types matching DB schema
+  index.ts                # Shared TypeScript types matching DB schema
 ```
 
 ---
@@ -338,8 +346,8 @@ types/
 ## Environment Variables
 
 ```
-EXPO_PUBLIC_SUPABASE_URL=
-EXPO_PUBLIC_SUPABASE_ANON_KEY=
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
 ```
 
 ---
