@@ -4,16 +4,15 @@ import type { NewPackingListEntry } from '../types';
 /**
  * Generates a packing list for a trip and inserts the entries into the DB.
  *
- * Logic (from spec):
+ * Logic:
  * 1. Fetch all activity IDs selected for the trip
- * 2. Find all items that share at least one activity with the trip
- * 3. For each matching item, calculate quantity based on quantity_type:
- *    - fixed       → always 1
- *    - per_night   → number of nights (end_date - start_date)
- *    - per_activity → count of overlapping activities between item and trip
- * 4. Batch-insert one packing_list_entry per item
- *
- * Throws on any DB error so the caller can surface it to the user.
+ * 2. Always include essential items (essential = true)
+ * 3. Also include non-essential items that share at least one activity with the trip
+ * 4. For each included item, calculate quantity based on quantity_type:
+ *    - fixed        → always 1
+ *    - per_night    → number of nights (end_date - start_date)
+ *    - per_activity → count of overlapping activities (essential items default to 1)
+ * 5. Batch-insert one packing_list_entry per item
  */
 export async function generatePackingList(tripId: string): Promise<void> {
   // ── Step 1: Fetch the trip's dates and activity IDs ─────────────────────────
@@ -35,50 +34,75 @@ export async function generatePackingList(tripId: string): Promise<void> {
 
   const tripActivityIds = new Set(tripActivityRows.map((r) => r.activity_id));
 
-  // No activities selected → nothing to generate
-  if (tripActivityIds.size === 0) return;
+  // Number of nights: end_date - start_date (minimum 1 to avoid 0-quantity rows)
+  const nights = Math.max(1, daysBetween(trip.start_date, trip.end_date));
 
-  // ── Step 2: Fetch all items that have at least one matching activity ─────────
-  // item_activities gives us item_id + activity_id pairs. We then group by item
-  // to find the intersection with the trip's activities.
+  // ── Step 2: Fetch all essential items ───────────────────────────────────────
+  // These are always included regardless of trip activities.
 
-  const { data: itemActivityRows, error: iaError } = await supabase
-    .from('item_activities')
-    .select('item_id, activity_id')
-    .in('activity_id', Array.from(tripActivityIds));
-
-  if (iaError) throw new Error(`Failed to fetch item activities: ${iaError.message}`);
-
-  if (itemActivityRows.length === 0) return;
-
-  // Group matching activity IDs by item_id so we can calculate per_activity qty
-  const itemMatchingActivities = new Map<string, string[]>();
-  for (const row of itemActivityRows) {
-    const existing = itemMatchingActivities.get(row.item_id) ?? [];
-    existing.push(row.activity_id);
-    itemMatchingActivities.set(row.item_id, existing);
-  }
-
-  const matchingItemIds = Array.from(itemMatchingActivities.keys());
-
-  // ── Step 3: Fetch quantity_type for each matching item ───────────────────────
-
-  const { data: items, error: itemsError } = await supabase
+  const { data: essentialItems, error: essentialError } = await supabase
     .from('items')
     .select('id, quantity_type')
-    .in('id', matchingItemIds);
+    .eq('essential', true);
 
-  if (itemsError) throw new Error(`Failed to fetch items: ${itemsError.message}`);
+  if (essentialError) throw new Error(`Failed to fetch essential items: ${essentialError.message}`);
 
-  // Number of nights: end_date - start_date (minimum 1 to avoid 0-quantity rows)
-  const nights = Math.max(
-    1,
-    daysBetween(trip.start_date, trip.end_date),
-  );
+  // ── Step 3: Fetch non-essential items with matching activities ───────────────
 
-  // ── Step 4: Build entries and insert ─────────────────────────────────────────
+  // Maps item_id → array of matching activity IDs (for per_activity quantity)
+  const itemMatchingActivities = new Map<string, string[]>();
 
-  const entries: NewPackingListEntry[] = items.map((item) => {
+  if (tripActivityIds.size > 0) {
+    const { data: itemActivityRows, error: iaError } = await supabase
+      .from('item_activities')
+      .select('item_id, activity_id')
+      .in('activity_id', Array.from(tripActivityIds));
+
+    if (iaError) throw new Error(`Failed to fetch item activities: ${iaError.message}`);
+
+    for (const row of itemActivityRows) {
+      const existing = itemMatchingActivities.get(row.item_id) ?? [];
+      existing.push(row.activity_id);
+      itemMatchingActivities.set(row.item_id, existing);
+    }
+  }
+
+  // ── Step 4: Fetch quantity_type for non-essential matched items ──────────────
+  // (Essential items are already fetched with quantity_type above)
+
+  const activityMatchedItemIds = Array.from(itemMatchingActivities.keys());
+
+  let activityMatchedItems: { id: string; quantity_type: string }[] = [];
+  if (activityMatchedItemIds.length > 0) {
+    const { data, error } = await supabase
+      .from('items')
+      .select('id, quantity_type')
+      .in('id', activityMatchedItemIds)
+      .eq('essential', false); // exclude essentials already covered above
+
+    if (error) throw new Error(`Failed to fetch activity-matched items: ${error.message}`);
+    activityMatchedItems = data ?? [];
+  }
+
+  // ── Step 5: Merge essential + activity-matched items ────────────────────────
+  // Use a Map to deduplicate by item_id (shouldn't happen in practice, but safe).
+
+  const allItems = new Map<string, { id: string; quantity_type: string; isEssential: boolean }>();
+
+  for (const item of essentialItems ?? []) {
+    allItems.set(item.id, { ...item, isEssential: true });
+  }
+  for (const item of activityMatchedItems) {
+    if (!allItems.has(item.id)) {
+      allItems.set(item.id, { ...item, isEssential: false });
+    }
+  }
+
+  if (allItems.size === 0) return;
+
+  // ── Step 6: Build entries and insert ─────────────────────────────────────────
+
+  const entries: NewPackingListEntry[] = Array.from(allItems.values()).map((item) => {
     let quantity: number;
 
     switch (item.quantity_type) {
@@ -89,8 +113,10 @@ export async function generatePackingList(tripId: string): Promise<void> {
         quantity = nights;
         break;
       case 'per_activity':
-        // Count how many of the trip's activities match this item's activities
-        quantity = (itemMatchingActivities.get(item.id) ?? []).length;
+        // Essential items have no activity match → default to 1
+        quantity = item.isEssential
+          ? 1
+          : (itemMatchingActivities.get(item.id) ?? []).length;
         break;
       default:
         quantity = 1;
@@ -118,12 +144,8 @@ export async function generatePackingList(tripId: string): Promise<void> {
 // Returns the number of days between two ISO date strings (YYYY-MM-DD).
 // Uses UTC to avoid daylight-saving edge cases.
 function daysBetween(start: string, end: string): number {
-  const startMs = Date.UTC(
-    ...parseDate(start) as [number, number, number],
-  );
-  const endMs = Date.UTC(
-    ...parseDate(end) as [number, number, number],
-  );
+  const startMs = Date.UTC(...parseDate(start) as [number, number, number]);
+  const endMs = Date.UTC(...parseDate(end) as [number, number, number]);
   return Math.round((endMs - startMs) / (1000 * 60 * 60 * 24));
 }
 

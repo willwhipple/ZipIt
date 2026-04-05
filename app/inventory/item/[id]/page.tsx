@@ -19,6 +19,7 @@ export default function EditItemPage() {
   const [name, setName] = useState('');
   const [category, setCategory] = useState<CategoryType>('Clothing');
   const [quantityType, setQuantityType] = useState<QuantityType>('fixed');
+  const [essential, setEssential] = useState(false);
   const [selectedActivityIds, setSelectedActivityIds] = useState<string[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
@@ -37,6 +38,7 @@ export default function EditItemPage() {
         setName(itemRes.data.name);
         setCategory(itemRes.data.category as CategoryType);
         setQuantityType(itemRes.data.quantity_type as QuantityType);
+        setEssential(itemRes.data.essential ?? false);
       }
       if (activitiesRes.data) setActivities(activitiesRes.data as Activity[]);
       if (itemActivitiesRes.data) {
@@ -63,7 +65,7 @@ export default function EditItemPage() {
 
     const { error: updateError } = await supabase
       .from('items')
-      .update({ name: name.trim(), category, quantity_type: quantityType })
+      .update({ name: name.trim(), category, quantity_type: quantityType, essential })
       .eq('id', itemId);
 
     if (updateError) {
@@ -174,28 +176,47 @@ export default function EditItemPage() {
           </div>
         </div>
 
-        {/* Activities */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Activities</label>
-          <div className="flex flex-wrap gap-2">
-            {activities.map((a) => {
-              const selected = selectedActivityIds.includes(a.id);
-              return (
-                <button
-                  key={a.id}
-                  onClick={() => toggleActivity(a.id)}
-                  className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${
-                    selected
-                      ? 'bg-blue-500 text-white border-blue-500'
-                      : 'bg-white text-gray-600 border-gray-300'
-                  }`}
-                >
-                  {a.name}
-                </button>
-              );
-            })}
+        {/* Essential toggle */}
+        <div className="flex items-center justify-between py-2 border-b border-gray-100">
+          <div>
+            <p className="text-sm font-medium text-gray-800">Essential</p>
+            <p className="text-xs text-gray-400 mt-0.5">Always packed on every trip</p>
           </div>
+          <label className="relative inline-flex items-center cursor-pointer">
+            <input
+              type="checkbox"
+              checked={essential}
+              onChange={(e) => setEssential(e.target.checked)}
+              className="sr-only peer"
+            />
+            <div className="w-11 h-6 bg-gray-200 peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:bg-blue-500 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-5" />
+          </label>
         </div>
+
+        {/* Activities — hidden when essential */}
+        {!essential && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Activities</label>
+            <div className="flex flex-wrap gap-2">
+              {activities.map((a) => {
+                const selected = selectedActivityIds.includes(a.id);
+                return (
+                  <button
+                    key={a.id}
+                    onClick={() => toggleActivity(a.id)}
+                    className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${
+                      selected
+                        ? 'bg-blue-500 text-white border-blue-500'
+                        : 'bg-white text-gray-600 border-gray-300'
+                    }`}
+                  >
+                    {a.name}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Error */}
         {error && (

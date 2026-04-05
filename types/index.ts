@@ -34,6 +34,7 @@ export type Item = {
   name: string;
   category: CategoryType;
   quantity_type: QuantityType;
+  essential: boolean;
   created_at: string;
 };
 

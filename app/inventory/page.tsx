@@ -63,7 +63,7 @@ export default function InventoryPage() {
     <div>
       {/* Header */}
       <div className="flex items-center justify-between px-4 pt-12 pb-4">
-        <h1 className="text-2xl font-bold">Inventory</h1>
+        <h1 className="text-2xl font-bold">My Stuff</h1>
         <div className="flex gap-2">
           <button
             onClick={() => router.push('/activities')}
