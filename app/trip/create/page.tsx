@@ -18,6 +18,7 @@ export default function CreateTripPage() {
   const router = useRouter();
 
   const [name, setName] = useState('');
+  const [destination, setDestination] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [accommodation, setAccommodation] = useState<AccommodationType>('Hotel');
@@ -57,6 +58,7 @@ export default function CreateTripPage() {
       .from('trips')
       .insert({
         name: name.trim(),
+        destination: destination.trim() || null,
         start_date: startDate,
         end_date: endDate,
         accommodation_type: accommodation,
@@ -107,6 +109,21 @@ export default function CreateTripPage() {
             placeholder="e.g. Mexico City Weekend"
             className="w-full border border-gray-300 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
+        </div>
+
+        {/* Destination */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Destination</label>
+          <input
+            type="text"
+            value={destination}
+            onChange={(e) => setDestination(e.target.value)}
+            placeholder="e.g. Mexico City, Mexico"
+            className="w-full border border-gray-300 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          <p className="text-xs text-gray-400 mt-1">
+            For best results, include city and country (e.g. Dublin, Ireland)
+          </p>
         </div>
 
         {/* Dates */}

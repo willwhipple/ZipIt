@@ -48,6 +48,7 @@ export type Trip = {
   name: string;
   start_date: string; // ISO date string (YYYY-MM-DD)
   end_date: string;   // ISO date string (YYYY-MM-DD)
+  destination: string | null;
   accommodation_type: AccommodationType;
   carry_on_only: boolean;
   laundry_available: boolean;

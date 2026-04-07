@@ -4,7 +4,7 @@
 - Change "Inventory" to "My Stuff" throughout
 
 ## Create Trip — Date Entry
-- Change date input: user enters start date + number of nights, end date is calculated automatically. Manual end date entry remains as an option.
+- Change date input: user enters start date + number of nights, end date is calculated automatically. Manual end date entry remains as an option. Also, if inputting the end date manually the end date selector should begin at the day after the start date, not the current date. 
 
 ## Travel Mode
 - Add "How are you getting there?" to Create Trip: Flying, Train, Driving, Other.
@@ -23,3 +23,9 @@
 
 ## Add Item — Inline Activity Creation
 - When adding/editing an item, allow creating a new activity inline without leaving the form.
+
+## Weather — Temperature Unit Preference
+- Currently displays temperatures in °C.
+- Add a user setting to choose °C or °F.
+- Could live in a future Settings screen or as a toggle on the weather banner itself.
+

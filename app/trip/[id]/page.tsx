@@ -7,6 +7,79 @@ import type { Trip, PackingListEntry, Item, CategoryType } from '@/types';
 
 type EntryWithItem = PackingListEntry & { items: Item };
 
+type WeatherSummary = {
+  label: string;   // resolved location name, e.g. "Dublin, Leinster, IE"
+  emoji: string;
+  low: number;     // °C
+  high: number;    // °C
+  isClimatology: boolean;
+};
+
+// Maps WMO weather interpretation codes to a representative emoji.
+function weatherEmoji(code: number): string {
+  if (code <= 1) return '☀️';
+  if (code === 2) return '⛅';
+  if (code === 3) return '☁️';
+  if (code <= 48) return '🌫️';
+  if (code <= 67) return '🌧️';
+  if (code <= 77) return '❄️';
+  if (code <= 82) return '🌦️';
+  if (code <= 86) return '❄️';
+  return '⛈️';
+}
+
+async function fetchWeather(trip: Trip): Promise<WeatherSummary | null> {
+  if (!trip.destination) return null;
+
+  // Step 1: Geocode the destination.
+  const geoRes = await fetch(
+    `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(trip.destination)}&count=1&language=en&format=json`
+  );
+  if (!geoRes.ok) return null;
+  const geoData = await geoRes.json();
+  if (!geoData.results?.length) return null;
+
+  const { latitude, longitude, name, admin1, country_code } = geoData.results[0];
+  const locationLabel = [name, admin1, country_code].filter(Boolean).join(', ');
+
+  // Step 2: Decide forecast vs. climatology based on days until trip start.
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const tripStart = new Date(trip.start_date + 'T00:00:00');
+  const daysUntil = Math.ceil((tripStart.getTime() - today.getTime()) / 86_400_000);
+  const useForecast = daysUntil <= 16;
+
+  let weatherData: { daily: { temperature_2m_max: number[]; temperature_2m_min: number[]; weathercode: number[] } };
+
+  if (useForecast) {
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&daily=temperature_2m_max,temperature_2m_min,weathercode&timezone=auto&start_date=${trip.start_date}&end_date=${trip.end_date}`;
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    weatherData = await res.json();
+  } else {
+    // Use climate API with the trip's actual month/dates.
+    const url = `https://climate-api.open-meteo.com/v1/climate?latitude=${latitude}&longitude=${longitude}&daily=temperature_2m_max,temperature_2m_min,weathercode&models=EC_Earth3P_HR&start_date=${trip.start_date}&end_date=${trip.end_date}`;
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    weatherData = await res.json();
+  }
+
+  const maxTemps = weatherData?.daily?.temperature_2m_max;
+  const minTemps = weatherData?.daily?.temperature_2m_min;
+  const codes = weatherData?.daily?.weathercode;
+  if (!maxTemps?.length || !minTemps?.length) return null;
+
+  const high = Math.round(Math.max(...maxTemps));
+  const low = Math.round(Math.min(...minTemps));
+
+  // Pick the most frequent weather code as representative.
+  const codeFreq: Record<number, number> = {};
+  for (const c of codes ?? []) codeFreq[c] = (codeFreq[c] ?? 0) + 1;
+  const dominantCode = Number(Object.entries(codeFreq).sort((a, b) => b[1] - a[1])[0]?.[0] ?? 0);
+
+  return { label: locationLabel, emoji: weatherEmoji(dominantCode), low, high, isClimatology: !useForecast };
+}
+
 const CATEGORY_ORDER: CategoryType[] = [
   'Clothing',
   'Shoes',
@@ -35,6 +108,10 @@ export default function PackingListPage() {
   // Show archive prompt when 100% packed
   const [archivePrompted, setArchivePrompted] = useState(false);
 
+  // Weather
+  const [weather, setWeather] = useState<WeatherSummary | null>(null);
+  const [weatherLoading, setWeatherLoading] = useState(false);
+
   useEffect(() => {
     fetchData();
   }, [tripId]);
@@ -54,6 +131,15 @@ export default function PackingListPage() {
     if (tripRes.data) setTrip(tripRes.data as Trip);
     if (entriesRes.data) setEntries(entriesRes.data as EntryWithItem[]);
     setLoading(false);
+
+    // Fetch weather after trip data is available, if a destination was set.
+    if (tripRes.data?.destination) {
+      setWeatherLoading(true);
+      fetchWeather(tripRes.data as Trip).then((result) => {
+        setWeather(result);
+        setWeatherLoading(false);
+      });
+    }
   }
 
   async function togglePacked(entry: EntryWithItem) {
@@ -212,6 +298,25 @@ export default function PackingListPage() {
           </span>
         </div>
       </div>
+
+      {/* Weather banner */}
+      {weatherLoading && (
+        <div className="px-4 py-2 border-b border-gray-100">
+          <p className="text-xs text-gray-400">Loading weather…</p>
+        </div>
+      )}
+      {weather && !weatherLoading && (
+        <div className="px-4 py-2 border-b border-gray-100 bg-white">
+          <p className="text-xs text-gray-500">
+            {weather.label} · {formatDate(trip.start_date)}
+            {trip.start_date !== trip.end_date && <>–{formatDate(trip.end_date)}</>}
+            {' · '}{weather.emoji}{' '}
+            {weather.isClimatology
+              ? `Typically ${weather.low}–${weather.high}°C`
+              : `Low ${weather.low}°C / High ${weather.high}°C`}
+          </p>
+        </div>
+      )}
 
       {/* Grouped list */}
       <div className="flex-1">
