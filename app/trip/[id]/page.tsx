@@ -96,6 +96,10 @@ export default function PackingListPage() {
   const [entries, setEntries] = useState<EntryWithItem[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // A trip is read-only if it's been archived or its end date has passed.
+  const today = new Date().toISOString().split('T')[0];
+  const readOnly = trip ? (trip.archived || trip.end_date < today) : false;
+
   // Ad-hoc item modal
   const [showAdHoc, setShowAdHoc] = useState(false);
   const [adHocName, setAdHocName] = useState('');
@@ -273,12 +277,18 @@ export default function PackingListPage() {
             ← Back
           </button>
           <div className="flex-1" />
-          <button
-            onClick={() => setShowArchiveConfirm(true)}
-            className="text-sm text-gray-400 font-medium"
-          >
-            Archive
-          </button>
+          {readOnly ? (
+            <span className="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded-full">
+              Archived
+            </span>
+          ) : (
+            <button
+              onClick={() => setShowArchiveConfirm(true)}
+              className="text-sm text-gray-400 font-medium"
+            >
+              Archive
+            </button>
+          )}
         </div>
         <h1 className="text-xl font-bold text-gray-900">{trip.name}</h1>
         <p className="text-sm text-gray-500 mt-0.5">
@@ -330,8 +340,9 @@ export default function PackingListPage() {
             {categoryEntries.map((entry) => (
               <button
                 key={entry.id}
-                onClick={() => togglePacked(entry)}
-                className="w-full flex items-center gap-3 px-4 py-3 border-b border-gray-100 bg-white text-left"
+                onClick={() => !readOnly && togglePacked(entry)}
+                disabled={readOnly}
+                className="w-full flex items-center gap-3 px-4 py-3 border-b border-gray-100 bg-white text-left disabled:cursor-default"
               >
                 {/* Checkbox */}
                 <div
@@ -366,14 +377,16 @@ export default function PackingListPage() {
         ))}
       </div>
 
-      {/* FAB — Add Item */}
-      <button
-        onClick={() => setShowAdHoc(true)}
-        className="fixed bottom-24 right-4 w-14 h-14 bg-blue-500 text-white rounded-full shadow-lg flex items-center justify-center text-2xl font-light"
-        style={{ maxWidth: 'calc(215px)' }}
-      >
-        +
-      </button>
+      {/* FAB — Add Item (hidden for archived/past trips) */}
+      {!readOnly && (
+        <button
+          onClick={() => setShowAdHoc(true)}
+          className="fixed bottom-24 right-4 w-14 h-14 bg-blue-500 text-white rounded-full shadow-lg flex items-center justify-center text-2xl font-light"
+          style={{ maxWidth: 'calc(215px)' }}
+        >
+          +
+        </button>
+      )}
 
       {/* Ad-hoc item modal */}
       {showAdHoc && (

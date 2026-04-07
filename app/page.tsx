@@ -20,10 +20,12 @@ export default function HomePage() {
 
   async function fetchTrips() {
     setLoading(true);
+    const today = new Date().toISOString().split('T')[0];
     const { data, error } = await supabase
       .from('trips')
       .select('*, packing_list_entries(id, packed)')
       .eq('archived', false)
+      .gte('end_date', today)
       .order('start_date', { ascending: true });
 
     if (!error && data) setTrips(data as TripWithProgress[]);
@@ -74,6 +76,12 @@ export default function HomePage() {
           >
             Create Your First Trip
           </button>
+          <button
+            onClick={() => router.push('/trips/history')}
+            className="text-sm text-gray-400"
+          >
+            Past trips →
+          </button>
         </div>
       ) : (
         <div className="flex flex-col gap-3 px-4">
@@ -113,6 +121,14 @@ export default function HomePage() {
               </button>
             );
           })}
+
+          {/* Past trips link */}
+          <button
+            onClick={() => router.push('/trips/history')}
+            className="w-full text-center text-sm text-gray-400 py-3"
+          >
+            Past trips →
+          </button>
         </div>
       )}
     </div>

@@ -1,25 +1,11 @@
 # Issues
 
-## UI / Labels
-- Change "Inventory" to "My Stuff" throughout
-
 ## Create Trip — Date Entry
 - Change date input: user enters start date + number of nights, end date is calculated automatically. Manual end date entry remains as an option. Also, if inputting the end date manually the end date selector should begin at the day after the start date, not the current date. 
 
 ## Travel Mode
 - Add "How are you getting there?" to Create Trip: Flying, Train, Driving, Other.
 - Driving = no luggage restrictions. Flying/Train = respect carry-on only toggle and flag size limits.
-
-## Essential Flag (requires DB migration)
-- Add `essential` boolean column to `items` table (default false).
-- Essential items are always included in every packing list — no activity tag needed.
-- Non-essential items require at least one activity match to appear on a packing list.
-- Packing list generation logic: include item if `essential = true` OR item has a matching activity.
-- In Add/Edit Item UI: "Essential" toggle. When on, hide/disable activity selector. When off, activity selection is required.
-
-## Packing List — Show Quantity
-- For items with quantity > 1, display the calculated quantity on the packing list (e.g. "Socks × 5").
-- The quantity is already stored in `packing_list_entries.quantity` — this is a UI-only change.
 
 ## Add Item — Inline Activity Creation
 - When adding/editing an item, allow creating a new activity inline without leaving the form.
@@ -39,3 +25,20 @@
 - Preference could live on the Create Trip form (next to the laundry toggle, revealed when it's on), or in a future Settings screen as a global default.
 - Implementation: replace the `LAUNDRY_CAP` constant with a value derived from the user's preference; pass it into `calculateQuantity` the same way the boolean is passed today.
 
+## Conditional Item Rules Engine (deferred from Stage 2)
+- Allow users to define rules that conditionally include items based on trip context.
+- Example rules: "bring neck pillow WHEN flight duration > 4hrs", "bring travel umbrella WHEN destination is rainy season".
+- Likely requires a new `rules` table and a rule evaluation pass during packing list generation.
+- Deferred due to complexity — revisit after trip history and review queue are complete.
+
+## "Review Later" Queue (deferred from Stage 2)
+- When a user taps "Later" on the ad-hoc inventory prompt, the item is stored with `added_to_inventory = null`.
+- A review queue should surface these items so the user can decide: add to inventory or dismiss permanently.
+- Could live on the Inventory screen as a banner/section, or as a dedicated screen.
+- Deferred until trip history is complete.
+
+## Trip Templates
+- Allow users to save a trip as a template for trips they take regularly (e.g. "Weekend Golf Trip", "Annual Ski Week").
+- Templates store all trip fields except dates and duration: name, activities, accommodation type, carry-on only, laundry available, travel mode.
+- When creating a new trip, user can optionally select a template to prefill the form — then just add dates and go.
+- Requires a new `trip_templates` table and a template picker step in the Create Trip flow.
