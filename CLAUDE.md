@@ -42,28 +42,28 @@ No AI in Stage 1 — just clean set logic and a great mobile web experience.
 | Styling | Tailwind CSS v3 |
 | Database | Supabase (Postgres) |
 | Auth | None in Stage 1.0 — added in Stage 1.1 |
-| AI | Google Gemini Flash-Lite (Stage 3 only) |
+| AI | Google Gemini Flash-Lite |
 | Deployment | Vercel (free tier) |
 
 ---
 
 ## Stage Roadmap
 
-**Stage 1.0 — Core (current)**
+**Stage 1.0 — Core**
 Fully working app, single user, no auth. Ship something usable.
 
 **Stage 1.1 — Auth**
 Add Supabase auth. Add `user_id` to items, trips, activities tables.
 Enable Row Level Security. Data follows the user across devices.
 
-**Stage 2 — Smarts**
-- Weather pull based on destination + dates
-- Trip duration logic (auto-scale quantities)
-- Conditional item rules (e.g. bring neck pillow WHEN flight > 4hrs)
-- Lightweight trip history
-- "Review later" queue for ad-hoc items
+**Stage 2 — Smarts (complete)**
+- ~~Weather pull based on destination + dates~~
+- ~~Trip duration logic (auto-scale quantities)~~
+- ~~Conditional item rules~~ *(descoped → issues.md)*
+- ~~Lightweight trip history~~
+- ~~"Review later" queue for ad-hoc items~~ *(descoped → issues.md)*
 
-**Stage 3 — AI Layer**
+**Stage 3 — AI Layer (current)**
 - Gemini Flash-Lite integration
 - AI-generated trip suggestions based on trip context
 - Weather-aware packing suggestions
@@ -332,10 +332,14 @@ app/
         page.tsx          # Edit item
   activities/
     page.tsx              # Activities manager
+  api/
+    ai/
+      route.ts            # AI suggestion endpoint
 
 lib/
   supabase.ts             # Supabase client
   generation.ts           # Packing list generation logic
+  gemini.ts               # Gemini API client
 
 types/
   index.ts                # Shared TypeScript types matching DB schema
@@ -348,6 +352,8 @@ types/
 ```
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
+# Server-only — never expose to client
+GEMINI_API_KEY=
 ```
 
 ---

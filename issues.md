@@ -42,3 +42,15 @@
 - Templates store all trip fields except dates and duration: name, activities, accommodation type, carry-on only, laundry available, travel mode.
 - When creating a new trip, user can optionally select a template to prefill the form — then just add dates and go.
 - Requires a new `trip_templates` table and a template picker step in the Create Trip flow.
+
+## AI — Gemini Free Tier Quota
+- `gemini-2.0-flash-lite` has a free-tier daily request quota. Once exhausted, all AI features (trip description parsing, packing suggestions, inventory prefill) return a 503 error.
+- Root fix: enable billing on the Google Cloud project tied to `GEMINI_API_KEY` (Gemini Flash-Lite costs ~$0.075/1M input tokens — negligible at this scale).
+- Code improvement: the route currently returns 503 for rate-limit errors. Should detect the 429 from the SDK and return 429 to the client, with a user-facing message like "AI is busy — try again in a moment."
+- Related: `callGeminiSafely` in `app/api/ai/route.ts` now logs the underlying SDK error (cause) for easier diagnosis.
+
+## About Me
+- Allow users to share any context about them that may be helpful to AI when thinking of things they might have forgotten. 
+
+## Calendar Integration
+- Optional Calendar Sync to retreive any specific events that might be on the cal. 

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import supabase from '@/lib/supabase';
-import type { Trip, PackingListEntry, Item, CategoryType } from '@/types';
+import type { Trip, PackingListEntry, Item, CategoryType, AiSuggestion } from '@/types';
 
 type EntryWithItem = PackingListEntry & { items: Item };
 
@@ -115,6 +115,13 @@ export default function PackingListPage() {
   // Weather
   const [weather, setWeather] = useState<WeatherSummary | null>(null);
   const [weatherLoading, setWeatherLoading] = useState(false);
+
+  // AI suggestions
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [suggestions, setSuggestions] = useState<AiSuggestion[]>([]);
+  const [suggestionsLoading, setSuggestionsLoading] = useState(false);
+  const [suggestionsError, setSuggestionsError] = useState('');
+  const [addingSuggestion, setAddingSuggestion] = useState<string | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -243,6 +250,76 @@ export default function PackingListPage() {
     setAdHocEntry(null);
   }
 
+  async function loadSuggestions() {
+    setSuggestionsLoading(true);
+    setSuggestionsError('');
+    setShowSuggestions(true);
+
+    const existingItems = entries.map((e) => e.items.name);
+    const weatherSummary = weather
+      ? `${weather.isClimatology ? 'Typically' : ''} Low ${weather.low}°C / High ${weather.high}°C`.trim()
+      : undefined;
+
+    try {
+      const res = await fetch('/api/ai', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'suggest_items', tripId, existingItems, weatherSummary }),
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        setSuggestionsError("Couldn't get suggestions right now. Try again later.");
+      } else {
+        setSuggestions(data.suggestions ?? []);
+        if ((data.suggestions ?? []).length === 0) {
+          setSuggestionsError("No additional suggestions — your list looks complete!");
+        }
+      }
+    } catch {
+      setSuggestionsError("Couldn't get suggestions right now. Try again later.");
+    } finally {
+      setSuggestionsLoading(false);
+    }
+  }
+
+  async function addSuggestion(suggestion: AiSuggestion) {
+    setAddingSuggestion(suggestion.name);
+
+    const { data: newItem, error: itemError } = await supabase
+      .from('items')
+      .insert({ name: suggestion.name, category: suggestion.category, quantity_type: 'fixed' })
+      .select()
+      .single();
+
+    if (itemError || !newItem) {
+      setAddingSuggestion(null);
+      return;
+    }
+
+    const { data: newEntry, error: entryError } = await supabase
+      .from('packing_list_entries')
+      .insert({
+        trip_id: tripId,
+        item_id: newItem.id,
+        quantity: 1,
+        packed: false,
+        is_adhoc: true,
+        added_to_inventory: null,
+      })
+      .select('*, items(*)')
+      .single();
+
+    if (entryError || !newEntry) {
+      setAddingSuggestion(null);
+      return;
+    }
+
+    setEntries((prev) => [...prev, newEntry as EntryWithItem]);
+    setSuggestions((prev) => prev.filter((s) => s.name !== suggestion.name));
+    setAddingSuggestion(null);
+    setAdHocEntry(newEntry as EntryWithItem);
+  }
+
   function formatDate(dateStr: string) {
     const [year, month, day] = dateStr.split('-').map(Number);
     return new Date(year, month - 1, day).toLocaleDateString('en-US', {
@@ -307,6 +384,16 @@ export default function PackingListPage() {
             {packed} / {total} packed
           </span>
         </div>
+
+        {/* AI suggestions trigger — only shown for active trips */}
+        {!readOnly && (
+          <button
+            onClick={loadSuggestions}
+            className="mt-2 text-xs text-blue-500 font-medium"
+          >
+            ✦ Suggest missing items
+          </button>
+        )}
       </div>
 
       {/* Weather banner */}
@@ -449,6 +536,62 @@ export default function PackingListPage() {
               >
                 No thanks
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* AI suggestions bottom sheet */}
+      {showSuggestions && (
+        <div className="fixed inset-0 bg-black/40 flex items-end justify-center z-50">
+          <div className="w-full max-w-[430px] bg-white rounded-t-2xl flex flex-col max-h-[80vh]">
+            <div className="flex items-center justify-between px-6 pt-5 pb-3 border-b border-gray-100 flex-shrink-0">
+              <h3 className="text-lg font-semibold">AI Suggestions</h3>
+              <button
+                onClick={() => setShowSuggestions(false)}
+                className="text-gray-400 text-sm font-medium"
+              >
+                Done
+              </button>
+            </div>
+
+            <div className="overflow-y-auto flex-1 px-6 py-4">
+              {suggestionsLoading && (
+                <div className="flex items-center gap-2 py-6 justify-center">
+                  <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                  <span className="text-sm text-gray-500">Thinking…</span>
+                </div>
+              )}
+
+              {!suggestionsLoading && suggestionsError && (
+                <p className="text-sm text-gray-500 py-6 text-center">{suggestionsError}</p>
+              )}
+
+              {!suggestionsLoading && !suggestionsError && suggestions.length > 0 && (
+                <div className="flex flex-col gap-3">
+                  {suggestions.map((s) => (
+                    <div
+                      key={s.name}
+                      className="flex items-start gap-3 py-3 border-b border-gray-100 last:border-0"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900">{s.name}</p>
+                        <p className="text-xs text-gray-400 mt-0.5">{s.reason}</p>
+                        <span className="inline-block mt-1 text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
+                          {s.category}
+                        </span>
+                      </div>
+                      <button
+                        onClick={() => addSuggestion(s)}
+                        disabled={addingSuggestion === s.name}
+                        className="flex-shrink-0 bg-blue-500 text-white text-xs font-semibold px-3 py-1.5 rounded-full disabled:opacity-50"
+                      >
+                        {addingSuggestion === s.name ? '…' : 'Add'}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>

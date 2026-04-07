@@ -82,6 +82,35 @@ export type NewTrip = Omit<Trip, 'id' | 'created_at' | 'archived'>;
 
 export type NewPackingListEntry = Omit<PackingListEntry, 'id' | 'created_at'>;
 
+// ── AI types ───────────────────────────────────────────────────────────────────
+
+// A packing item suggested by the AI for a specific trip.
+export type AiSuggestion = {
+  name: string;
+  category: CategoryType;
+  reason: string;
+};
+
+// An inventory item suggested by the AI based on travel style.
+export type InventorySuggestion = {
+  name: string;
+  category: CategoryType;
+  quantityType: QuantityType;
+  reason: string;
+};
+
+// Trip fields extracted from a natural language description.
+export type ParsedTripDescription = {
+  name?: string;
+  destination?: string;
+  startDate?: string;        // YYYY-MM-DD
+  endDate?: string;          // YYYY-MM-DD
+  activities?: string[];     // activity names
+  accommodationType?: AccommodationType;
+  carryOnOnly?: boolean;
+  laundryAvailable?: boolean;
+};
+
 // ── Composite types ────────────────────────────────────────────────────────────
 // Used by generation logic and UI — joins that the app frequently needs.
 

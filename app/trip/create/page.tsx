@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import supabase from '@/lib/supabase';
 import { generatePackingList } from '@/lib/generation';
-import type { Activity, AccommodationType } from '@/types';
+import type { Activity, AccommodationType, ParsedTripDescription } from '@/types';
 
 const ACCOMMODATION_TYPES: AccommodationType[] = [
   'Hotel',
@@ -29,6 +29,11 @@ export default function CreateTripPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  // Natural language trip description
+  const [nlDescription, setNlDescription] = useState('');
+  const [nlParsing, setNlParsing] = useState(false);
+  const [nlError, setNlError] = useState('');
+
   useEffect(() => {
     supabase
       .from('activities')
@@ -38,6 +43,56 @@ export default function CreateTripPage() {
         if (data) setActivities(data as Activity[]);
       });
   }, []);
+
+  async function handleNLParse() {
+    if (!nlDescription.trim()) return;
+    setNlParsing(true);
+    setNlError('');
+
+    try {
+      const res = await fetch('/api/ai', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'parse_trip_description', description: nlDescription }),
+      });
+      const data = await res.json();
+
+      if (!res.ok || data.error) {
+        setNlError("Couldn't parse your description. Fill in the form below manually.");
+        return;
+      }
+
+      const parsed: ParsedTripDescription = data.parsed ?? {};
+
+      if (parsed.name) setName(parsed.name);
+      if (parsed.destination) setDestination(parsed.destination);
+      if (parsed.startDate) setStartDate(parsed.startDate);
+      if (parsed.endDate) setEndDate(parsed.endDate);
+      if (parsed.accommodationType) setAccommodation(parsed.accommodationType);
+      if (typeof parsed.carryOnOnly === 'boolean') setCarryOnOnly(parsed.carryOnOnly);
+      if (typeof parsed.laundryAvailable === 'boolean') setLaundryAvailable(parsed.laundryAvailable);
+
+      // Match parsed activity names against loaded activities (case-insensitive)
+      if (parsed.activities?.length) {
+        const matched = activities
+          .filter((a) =>
+            parsed.activities!.some(
+              (name) => name.toLowerCase() === a.name.toLowerCase()
+            )
+          )
+          .map((a) => a.id);
+        if (matched.length > 0) setSelectedActivityIds(matched);
+      }
+
+      if (Object.keys(parsed).length === 0) {
+        setNlError("Couldn't extract any details. Fill in the form below manually.");
+      }
+    } catch {
+      setNlError("Couldn't parse your description. Fill in the form below manually.");
+    } finally {
+      setNlParsing(false);
+    }
+  }
 
   function toggleActivity(id: string) {
     setSelectedActivityIds((prev) =>
@@ -99,6 +154,26 @@ export default function CreateTripPage() {
       </div>
 
       <div className="flex flex-col gap-5 px-4 py-5">
+        {/* Natural language description */}
+        <div className="bg-blue-50 rounded-2xl p-4">
+          <p className="text-sm font-medium text-blue-800 mb-2">✦ Describe your trip</p>
+          <textarea
+            value={nlDescription}
+            onChange={(e) => setNlDescription(e.target.value)}
+            placeholder={`e.g. "A long weekend in Paris for a friend's wedding, staying at a hotel, flying carry-on only"`}
+            rows={3}
+            className="w-full bg-white border border-blue-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+          />
+          {nlError && <p className="text-xs text-red-500 mt-1">{nlError}</p>}
+          <button
+            onClick={handleNLParse}
+            disabled={nlParsing || !nlDescription.trim()}
+            className="mt-2 w-full bg-blue-500 text-white text-sm font-semibold py-2.5 rounded-xl disabled:opacity-50"
+          >
+            {nlParsing ? 'Filling form…' : 'Fill form from description'}
+          </button>
+        </div>
+
         {/* Trip Name */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Trip Name</label>
