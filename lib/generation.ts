@@ -103,24 +103,10 @@ export async function generatePackingList(tripId: string): Promise<void> {
   // ── Step 6: Build entries and insert ─────────────────────────────────────────
 
   const entries: NewPackingListEntry[] = Array.from(allItems.values()).map((item) => {
-    let quantity: number;
-
-    switch (item.quantity_type) {
-      case 'fixed':
-        quantity = 1;
-        break;
-      case 'per_night':
-        quantity = nights;
-        break;
-      case 'per_activity':
-        // Essential items have no activity match → default to 1
-        quantity = item.isEssential
-          ? 1
-          : (itemMatchingActivities.get(item.id) ?? []).length;
-        break;
-      default:
-        quantity = 1;
-    }
+    const matchCount = item.isEssential
+      ? 0
+      : (itemMatchingActivities.get(item.id) ?? []).length;
+    const quantity = calculateQuantity(item.quantity_type, nights, matchCount, item.isEssential);
 
     return {
       trip_id: tripId,
@@ -141,9 +127,32 @@ export async function generatePackingList(tripId: string): Promise<void> {
   }
 }
 
+// Returns the quantity for one item given trip context.
+// Exported for unit testing.
+export function calculateQuantity(
+  quantityType: string,
+  nights: number,
+  matchingActivityCount: number,
+  isEssential: boolean = false
+): number {
+  switch (quantityType) {
+    case 'fixed':
+      return 1;
+    case 'per_night':
+      // Floor to 1 so same-day trips never produce 0-quantity rows.
+      return Math.max(1, nights);
+    case 'per_activity':
+      // Essential items have no activity match context → default to 1.
+      return isEssential ? 1 : matchingActivityCount;
+    default:
+      return 1;
+  }
+}
+
 // Returns the number of days between two ISO date strings (YYYY-MM-DD).
 // Uses UTC to avoid daylight-saving edge cases.
-function daysBetween(start: string, end: string): number {
+// Exported for unit testing.
+export function daysBetween(start: string, end: string): number {
   const startMs = Date.UTC(...parseDate(start) as [number, number, number]);
   const endMs = Date.UTC(...parseDate(end) as [number, number, number]);
   return Math.round((endMs - startMs) / (1000 * 60 * 60 * 24));
