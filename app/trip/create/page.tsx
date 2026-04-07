@@ -6,6 +6,14 @@ import supabase from '@/lib/supabase';
 import { generatePackingList } from '@/lib/generation';
 import type { Activity, AccommodationType, ParsedTripDescription } from '@/types';
 
+// Adds `days` to a YYYY-MM-DD string, returns YYYY-MM-DD.
+// Uses T00:00:00 suffix to avoid UTC-vs-local timezone offset shifting the date.
+function addDays(dateStr: string, days: number): string {
+  const d = new Date(dateStr + 'T00:00:00');
+  d.setDate(d.getDate() + days);
+  return d.toISOString().split('T')[0];
+}
+
 const ACCOMMODATION_TYPES: AccommodationType[] = [
   'Hotel',
   'Airbnb',
@@ -21,6 +29,8 @@ export default function CreateTripPage() {
   const [destination, setDestination] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [nights, setNights] = useState('');
+  const [endDateMode, setEndDateMode] = useState<'nights' | 'manual'>('nights');
   const [accommodation, setAccommodation] = useState<AccommodationType>('Hotel');
   const [carryOnOnly, setCarryOnOnly] = useState(false);
   const [laundryAvailable, setLaundryAvailable] = useState(false);
@@ -68,7 +78,19 @@ export default function CreateTripPage() {
       if (parsed.name) setName(parsed.name);
       if (parsed.destination) setDestination(parsed.destination);
       if (parsed.startDate) setStartDate(parsed.startDate);
-      if (parsed.endDate) setEndDate(parsed.endDate);
+      // Derive nights from AI-returned dates so the form stays in nights mode
+      if (parsed.startDate && parsed.endDate) {
+        const n = Math.round(
+          (new Date(parsed.endDate + 'T00:00:00').getTime() -
+           new Date(parsed.startDate + 'T00:00:00').getTime()) /
+          (1000 * 60 * 60 * 24)
+        );
+        if (n >= 0) setNights(String(n));
+      } else if (parsed.endDate) {
+        // End date only (no start date) — fall back to manual mode
+        setEndDate(parsed.endDate);
+        setEndDateMode('manual');
+      }
       if (parsed.accommodationType) setAccommodation(parsed.accommodationType);
       if (typeof parsed.carryOnOnly === 'boolean') setCarryOnOnly(parsed.carryOnOnly);
       if (typeof parsed.laundryAvailable === 'boolean') setLaundryAvailable(parsed.laundryAvailable);
@@ -107,8 +129,17 @@ export default function CreateTripPage() {
     setError('');
     if (!name.trim()) return setError('Please enter a trip name.');
     if (!startDate) return setError('Please enter a start date.');
-    if (!endDate) return setError('Please enter an end date.');
-    if (endDate < startDate) return setError('End date must be on or after start date.');
+
+    let finalEndDate: string;
+    if (endDateMode === 'nights') {
+      const n = parseInt(nights);
+      if (!nights || isNaN(n) || n < 1) return setError('Please enter a valid number of nights (minimum 1).');
+      finalEndDate = addDays(startDate, n);
+    } else {
+      if (!endDate) return setError('Please enter an end date.');
+      if (endDate <= startDate) return setError('End date must be after start date.');
+      finalEndDate = endDate;
+    }
 
     setLoading(true);
 
@@ -118,7 +149,7 @@ export default function CreateTripPage() {
         name: name.trim(),
         destination: destination.trim() || null,
         start_date: startDate,
-        end_date: endDate,
+        end_date: finalEndDate,
         accommodation_type: accommodation,
         carry_on_only: carryOnOnly,
         laundry_available: laundryAvailable,
@@ -145,6 +176,12 @@ export default function CreateTripPage() {
 
     router.replace(`/trip/${trip.id}`);
   }
+
+  // Derived end date for nights mode — recomputed on every render
+  const computedEndDate =
+    startDate && nights && !isNaN(parseInt(nights))
+      ? addDays(startDate, parseInt(nights))
+      : '';
 
   return (
     <div className="flex flex-col min-h-full">
@@ -219,24 +256,59 @@ export default function CreateTripPage() {
         </div>
 
         {/* Dates */}
-        <div className="flex gap-3">
-          <div className="flex-1">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
-            <input
-              type="date"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              className="w-full border border-gray-300 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+        <div>
+          <div className="flex gap-3">
+            {/* Start date — always shown */}
+            <div className="flex-1">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="w-full border border-gray-300 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+
+            {endDateMode === 'nights' ? (
+              /* Nights input */
+              <div className="flex-1">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Nights</label>
+                <input
+                  type="number"
+                  min="1"
+                  value={nights}
+                  onChange={(e) => setNights(e.target.value)}
+                  placeholder="e.g. 4"
+                  className="w-full border border-gray-300 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            ) : (
+              /* Manual end date — min set to day after start date */
+              <div className="flex-1">
+                <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+                <input
+                  type="date"
+                  value={endDate}
+                  min={startDate ? addDays(startDate, 1) : ''}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className="w-full border border-gray-300 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            )}
           </div>
-          <div className="flex-1">
-            <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
-            <input
-              type="date"
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-              className="w-full border border-gray-300 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+
+          {/* Computed return date + mode toggle */}
+          <div className="flex items-center justify-between mt-2">
+            {endDateMode === 'nights' && computedEndDate && (
+              <p className="text-xs text-gray-400">Returns: {computedEndDate}</p>
+            )}
+            <button
+              type="button"
+              onClick={() => setEndDateMode(endDateMode === 'nights' ? 'manual' : 'nights')}
+              className="text-xs text-blue-500 font-medium ml-auto"
+            >
+              {endDateMode === 'nights' ? 'Enter end date manually' : 'Use number of nights instead'}
+            </button>
           </div>
         </div>
 

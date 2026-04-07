@@ -1,7 +1,6 @@
 # Issues
 
-## Create Trip — Date Entry
-- Change date input: user enters start date + number of nights, end date is calculated automatically. Manual end date entry remains as an option. Also, if inputting the end date manually the end date selector should begin at the day after the start date, not the current date. 
+
 
 ## Travel Mode
 - Add "How are you getting there?" to Create Trip: Flying, Train, Driving, Other.
@@ -44,13 +43,16 @@
 - Requires a new `trip_templates` table and a template picker step in the Create Trip flow.
 
 ## AI — Gemini Free Tier Quota
-- `gemini-2.0-flash-lite` has a free-tier daily request quota. Once exhausted, all AI features (trip description parsing, packing suggestions, inventory prefill) return a 503 error.
-- Root fix: enable billing on the Google Cloud project tied to `GEMINI_API_KEY` (Gemini Flash-Lite costs ~$0.075/1M input tokens — negligible at this scale).
-- Code improvement: the route currently returns 503 for rate-limit errors. Should detect the 429 from the SDK and return 429 to the client, with a user-facing message like "AI is busy — try again in a moment."
-- Related: `callGeminiSafely` in `app/api/ai/route.ts` now logs the underlying SDK error (cause) for easier diagnosis.
+- `gemini-2.5-flash` has a free-tier daily request quota. Once exhausted, all AI features (trip description parsing, packing suggestions, inventory prefill) return a 503 error.
+- Current behaviour: `callGeminiSafely` in `app/api/ai/route.ts` catches all Gemini errors and returns 503; the UI shows "Couldn't get suggestions right now. Try again later." — this is acceptable fallback UX.
+- Root fix: enable billing on the Google Cloud project tied to `GEMINI_API_KEY` (negligible cost at this scale).
+- Possible improvement: detect the 429 status from the SDK specifically and surface "AI is busy — try again in a moment." vs the generic error for true outages.
 
 ## About Me
 - Allow users to share any context about them that may be helpful to AI when thinking of things they might have forgotten. 
 
 ## Calendar Integration
 - Optional Calendar Sync to retreive any specific events that might be on the cal. 
+
+- Ai assisted inventory prefill based on travel style
+- Weather aware packing suggestions

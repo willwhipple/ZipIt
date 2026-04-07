@@ -42,7 +42,7 @@ No AI in Stage 1 — just clean set logic and a great mobile web experience.
 | Styling | Tailwind CSS v3 |
 | Database | Supabase (Postgres) |
 | Auth | None in Stage 1.0 — added in Stage 1.1 |
-| AI | Google Gemini Flash-Lite |
+| AI | Google Gemini (`gemini-2.5-flash`) |
 | Deployment | Vercel (free tier) |
 
 ---
@@ -63,12 +63,11 @@ Enable Row Level Security. Data follows the user across devices.
 - ~~Lightweight trip history~~
 - ~~"Review later" queue for ad-hoc items~~ *(descoped → issues.md)*
 
-**Stage 3 — AI Layer (current)**
-- Gemini Flash-Lite integration
-- AI-generated trip suggestions based on trip context
-- Weather-aware packing suggestions
-- Natural language trip creation
-- AI-assisted inventory prefill based on travel style
+**Stage 3 — AI Layer (complete)**
+- ~~`gemini-2.5-flash` integration~~
+- ~~AI-generated packing suggestions based on trip context~~
+- ~~Natural language trip creation~~
+
 
 **Out of scope for Stage 1.0:**
 - Auth / multi-user
@@ -359,10 +358,8 @@ GEMINI_API_KEY=
 ---
 
 ## Future / Parking Lot
-- AI-assisted inventory prefill based on travel style
 - Item-level reminders (e.g. remind me to pack passport night before)
 - Default inventory generator
 - Trip sharing with travel companions
-- "Review later" queue for ad-hoc items (Stage 2)
-- Weather integration (Stage 2)
-- Conditional item rules engine (Stage 2)
+- "Review later" queue for ad-hoc items (→ issues.md)
+- Conditional item rules engine (→ issues.md)
