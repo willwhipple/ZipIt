@@ -253,7 +253,6 @@ export default function PackingListPage() {
   async function loadSuggestions() {
     setSuggestionsLoading(true);
     setSuggestionsError('');
-    setShowSuggestions(true);
 
     const existingItems = entries.map((e) => e.items.name);
     const weatherSummary = weather
@@ -279,6 +278,7 @@ export default function PackingListPage() {
       setSuggestionsError("Couldn't get suggestions right now. Try again later.");
     } finally {
       setSuggestionsLoading(false);
+      setShowSuggestions(true); // open modal only once results (or error) are ready
     }
   }
 
@@ -389,7 +389,8 @@ export default function PackingListPage() {
         {!readOnly && (
           <button
             onClick={loadSuggestions}
-            className="mt-2 text-xs text-blue-500 font-medium"
+            disabled={suggestionsLoading}
+            className="mt-2 text-xs text-blue-500 font-medium disabled:opacity-40"
           >
             ✦ Suggest missing items
           </button>
@@ -541,12 +542,22 @@ export default function PackingListPage() {
         </div>
       )}
 
-      {/* AI suggestions bottom sheet */}
+      {/* Non-blocking thinking indicator — floats above nav while AI fetches suggestions */}
+      {suggestionsLoading && (
+        <div className="fixed bottom-20 left-1/2 -translate-x-1/2 w-full max-w-[430px] px-4 z-40 pointer-events-none">
+          <div className="bg-white border border-gray-200 rounded-2xl px-4 py-3 shadow-lg flex items-center gap-3">
+            <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin flex-shrink-0" />
+            <span className="text-sm text-gray-600">Thinking about your packing list…</span>
+          </div>
+        </div>
+      )}
+
+      {/* AI suggestions bottom sheet — shown only after results are ready */}
       {showSuggestions && (
         <div className="fixed inset-0 bg-black/40 flex items-end justify-center z-50">
           <div className="w-full max-w-[430px] bg-white rounded-t-2xl flex flex-col max-h-[80vh]">
             <div className="flex items-center justify-between px-6 pt-5 pb-3 border-b border-gray-100 flex-shrink-0">
-              <h3 className="text-lg font-semibold">AI Suggestions</h3>
+              <h3 className="text-lg font-semibold">Smart Suggestions</h3>
               <button
                 onClick={() => setShowSuggestions(false)}
                 className="text-gray-400 text-sm font-medium"
@@ -556,18 +567,11 @@ export default function PackingListPage() {
             </div>
 
             <div className="overflow-y-auto flex-1 px-6 py-4">
-              {suggestionsLoading && (
-                <div className="flex items-center gap-2 py-6 justify-center">
-                  <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
-                  <span className="text-sm text-gray-500">Thinking…</span>
-                </div>
-              )}
-
-              {!suggestionsLoading && suggestionsError && (
+              {suggestionsError && (
                 <p className="text-sm text-gray-500 py-6 text-center">{suggestionsError}</p>
               )}
 
-              {!suggestionsLoading && !suggestionsError && suggestions.length > 0 && (
+              {!suggestionsError && suggestions.length > 0 && (
                 <div className="flex flex-col gap-3">
                   {suggestions.map((s) => (
                     <div

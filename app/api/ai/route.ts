@@ -163,20 +163,20 @@ async function handleParseTripDescription(req: ParseTripDescriptionRequest) {
 
   const prompt = `You are a travel assistant. Extract trip details from the description below.
 
-Return ONLY a JSON object with these fields (all optional — only include what you can confidently extract):
+Return ONLY a JSON object with these fields:
 {
-  "name": string,
-  "destination": string,
-  "startDate": string,        // YYYY-MM-DD format
-  "endDate": string,          // YYYY-MM-DD format
-  "activities": string[],     // only from: Golf, Beach, Business, Hiking, Formal Dinner, Casual, Ski, City Sightseeing
+  "name": string,              // Always include. If not stated, infer a short trip name from the destination/purpose (e.g. "Paris Wedding Weekend", "London Business Trip")
+  "destination": string,       // Always include. Format as "City, Country" (e.g. "London, United Kingdom"). Infer country from city if not stated — best guess is fine.
+  "startDate": string,         // YYYY-MM-DD format
+  "endDate": string,           // YYYY-MM-DD format
+  "activities": string[],      // only from: Golf, Beach, Business, Hiking, Formal Dinner, Casual, Ski, City Sightseeing
   "accommodationType": string, // one of: Hotel, Airbnb, Camping, Staying with someone, Other
   "carryOnOnly": boolean,
   "laundryAvailable": boolean
 }
 
 Today's date is ${today}. Use it to resolve relative dates like "next weekend" or "in two weeks".
-Do not guess. If a field isn't mentioned or clearly implied, leave it out.
+Always include "name" and "destination". For all other fields, only include if mentioned or clearly implied.
 Do not include explanatory text outside the JSON.
 
 --- DESCRIPTION ---

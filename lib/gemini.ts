@@ -25,7 +25,7 @@ function getModel() {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) throw new GeminiError('GEMINI_API_KEY is not set');
   const genAI = new GoogleGenerativeAI(apiKey);
-  _model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-lite' });
+  _model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
   return _model;
 }
 
@@ -68,7 +68,7 @@ function daysBetween(start: string, end: string): number {
 
 // ── Call wrapper ──────────────────────────────────────────────────────────────
 
-const TIMEOUT_MS = 8_000;
+const TIMEOUT_MS = 30_000;
 
 /**
  * Sends a prompt to Gemini and returns the raw text response.

@@ -33,6 +33,7 @@ export default function CreateTripPage() {
   const [nlDescription, setNlDescription] = useState('');
   const [nlParsing, setNlParsing] = useState(false);
   const [nlError, setNlError] = useState('');
+  const [nlDone, setNlDone] = useState(false);
 
   useEffect(() => {
     supabase
@@ -86,6 +87,8 @@ export default function CreateTripPage() {
 
       if (Object.keys(parsed).length === 0) {
         setNlError("Couldn't extract any details. Fill in the form below manually.");
+      } else {
+        setNlDone(true);
       }
     } catch {
       setNlError("Couldn't parse your description. Fill in the form below manually.");
@@ -157,21 +160,35 @@ export default function CreateTripPage() {
         {/* Natural language description */}
         <div className="bg-blue-50 rounded-2xl p-4">
           <p className="text-sm font-medium text-blue-800 mb-2">✦ Describe your trip</p>
-          <textarea
-            value={nlDescription}
-            onChange={(e) => setNlDescription(e.target.value)}
-            placeholder={`e.g. "A long weekend in Paris for a friend's wedding, staying at a hotel, flying carry-on only"`}
-            rows={3}
-            className="w-full bg-white border border-blue-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-          />
-          {nlError && <p className="text-xs text-red-500 mt-1">{nlError}</p>}
-          <button
-            onClick={handleNLParse}
-            disabled={nlParsing || !nlDescription.trim()}
-            className="mt-2 w-full bg-blue-500 text-white text-sm font-semibold py-2.5 rounded-xl disabled:opacity-50"
-          >
-            {nlParsing ? 'Filling form…' : 'Fill form from description'}
-          </button>
+          {nlDone ? (
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-green-700 font-medium">✓ Form filled from your description</p>
+              <button
+                onClick={() => { setNlDone(false); setNlError(''); }}
+                className="text-xs text-blue-500 font-medium ml-3"
+              >
+                Edit
+              </button>
+            </div>
+          ) : (
+            <>
+              <textarea
+                value={nlDescription}
+                onChange={(e) => setNlDescription(e.target.value)}
+                placeholder={`e.g. "A long weekend in Paris for a friend's wedding, staying at a hotel, flying carry-on only"`}
+                rows={3}
+                className="w-full bg-white border border-blue-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+              />
+              {nlError && <p className="text-xs text-red-500 mt-1">{nlError}</p>}
+              <button
+                onClick={handleNLParse}
+                disabled={nlParsing || !nlDescription.trim()}
+                className="mt-2 w-full bg-blue-500 text-white text-sm font-semibold py-2.5 rounded-xl disabled:opacity-50"
+              >
+                {nlParsing ? 'Filling form…' : 'Fill form from description'}
+              </button>
+            </>
+          )}
         </div>
 
         {/* Trip Name */}
