@@ -4,7 +4,7 @@ import { describe, it, expect, vi } from 'vitest';
 // Mock it so the pure utility exports can be imported without a real DB connection.
 vi.mock('./supabase', () => ({ supabase: {} }));
 
-import { calculateQuantity, daysBetween } from './generation';
+import { calculateQuantity, daysBetween, LAUNDRY_CAP } from './generation';
 
 // ── calculateQuantity ─────────────────────────────────────────────────────────
 
@@ -45,6 +45,37 @@ describe('calculateQuantity — per_activity', () => {
   it('returns 1 for essential items regardless of activity count', () => {
     expect(calculateQuantity('per_activity', 0, 0, true)).toBe(1);
     expect(calculateQuantity('per_activity', 0, 3, true)).toBe(1);
+  });
+});
+
+describe('calculateQuantity — per_night with laundry', () => {
+  it('floors to 1 for a same-day trip even with laundry', () => {
+    expect(calculateQuantity('per_night', 0, 0, false, true)).toBe(1);
+  });
+
+  it('returns nights when under the cap', () => {
+    expect(calculateQuantity('per_night', 1, 0, false, true)).toBe(1);
+    expect(calculateQuantity('per_night', 3, 0, false, true)).toBe(3);
+  });
+
+  it('returns nights when exactly at the cap', () => {
+    expect(calculateQuantity('per_night', LAUNDRY_CAP, 0, false, true)).toBe(LAUNDRY_CAP);
+  });
+
+  it('caps at LAUNDRY_CAP for trips longer than the cap', () => {
+    expect(calculateQuantity('per_night', 7, 0, false, true)).toBe(LAUNDRY_CAP);
+    expect(calculateQuantity('per_night', 14, 0, false, true)).toBe(LAUNDRY_CAP);
+    expect(calculateQuantity('per_night', 30, 0, false, true)).toBe(LAUNDRY_CAP);
+  });
+
+  it('does not cap when laundry is unavailable (regression)', () => {
+    expect(calculateQuantity('per_night', 7, 0, false, false)).toBe(7);
+    expect(calculateQuantity('per_night', 14, 0)).toBe(14); // default false
+  });
+
+  it('does not apply laundry cap to fixed or per_activity items', () => {
+    expect(calculateQuantity('fixed', 14, 0, false, true)).toBe(1);
+    expect(calculateQuantity('per_activity', 14, 3, false, true)).toBe(3);
   });
 });
 

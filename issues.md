@@ -29,3 +29,13 @@
 - Add a user setting to choose °C or °F.
 - Could live in a future Settings screen or as a toggle on the weather banner itself.
 
+## Laundry — Customisable Cap
+- Currently, enabling "Laundry Available" hard-caps all `per_night` items at `LAUNDRY_CAP = 4` nights.
+- Some users pack conservatively (happy with 3 nights); others pack a bit more buffer (prefer 5–6).
+- Add a laundry intensity preference, e.g. a slider or segmented control: **Light / Moderate / Heavy**.
+  - Light  → cap at 3 nights (pack very lean, wash often)
+  - Moderate → cap at 4 nights (current default)
+  - Heavy → cap at 6 nights (more buffer between washes)
+- Preference could live on the Create Trip form (next to the laundry toggle, revealed when it's on), or in a future Settings screen as a global default.
+- Implementation: replace the `LAUNDRY_CAP` constant with a value derived from the user's preference; pass it into `calculateQuantity` the same way the boolean is passed today.
+

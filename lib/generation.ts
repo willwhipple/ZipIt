@@ -1,6 +1,10 @@
 import { supabase } from './supabase';
 import type { NewPackingListEntry } from '../types';
 
+// When laundry is available, cap per_night quantities at this many nights.
+// Assumes the traveller will do laundry at least once on longer trips.
+export const LAUNDRY_CAP = 4;
+
 /**
  * Generates a packing list for a trip and inserts the entries into the DB.
  *
@@ -19,7 +23,7 @@ export async function generatePackingList(tripId: string): Promise<void> {
 
   const { data: trip, error: tripError } = await supabase
     .from('trips')
-    .select('start_date, end_date')
+    .select('start_date, end_date, laundry_available')
     .eq('id', tripId)
     .single();
 
@@ -106,7 +110,7 @@ export async function generatePackingList(tripId: string): Promise<void> {
     const matchCount = item.isEssential
       ? 0
       : (itemMatchingActivities.get(item.id) ?? []).length;
-    const quantity = calculateQuantity(item.quantity_type, nights, matchCount, item.isEssential);
+    const quantity = calculateQuantity(item.quantity_type, nights, matchCount, item.isEssential, trip.laundry_available);
 
     return {
       trip_id: tripId,
@@ -133,14 +137,19 @@ export function calculateQuantity(
   quantityType: string,
   nights: number,
   matchingActivityCount: number,
-  isEssential: boolean = false
+  isEssential: boolean = false,
+  laundryAvailable: boolean = false
 ): number {
   switch (quantityType) {
     case 'fixed':
       return 1;
-    case 'per_night':
+    case 'per_night': {
+      // If laundry is available, cap at LAUNDRY_CAP nights — no need to pack
+      // the full trip's worth of clothes when you can wash them.
       // Floor to 1 so same-day trips never produce 0-quantity rows.
-      return Math.max(1, nights);
+      const effective = laundryAvailable ? Math.min(nights, LAUNDRY_CAP) : nights;
+      return Math.max(1, effective);
+    }
     case 'per_activity':
       // Essential items have no activity match context → default to 1.
       return isEssential ? 1 : matchingActivityCount;
