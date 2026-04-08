@@ -82,6 +82,20 @@ export type NewTrip = Omit<Trip, 'id' | 'created_at' | 'archived'>;
 
 export type NewPackingListEntry = Omit<PackingListEntry, 'id' | 'created_at'>;
 
+// ── User preferences ───────────────────────────────────────────────────────────
+
+export type TemperatureUnit = 'celsius' | 'fahrenheit';
+export type LaundryStyle = 'frequent' | 'moderate' | 'infrequent';
+
+export type UserPreferences = {
+  id: string;
+  temperature_unit: TemperatureUnit;
+  laundry_style: LaundryStyle;
+  about_me: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
 // ── AI types ───────────────────────────────────────────────────────────────────
 
 // A packing item suggested by the AI for a specific trip.
@@ -97,6 +111,7 @@ export type InventorySuggestion = {
   category: CategoryType;
   quantityType: QuantityType;
   reason: string;
+  activities: string[]; // activity names suggested by the AI
 };
 
 // Trip fields extracted from a natural language description.

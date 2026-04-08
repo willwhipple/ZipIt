@@ -23,6 +23,10 @@ export default function CreateItemPage() {
   const [activities, setActivities] = useState<Activity[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [showNewActivity, setShowNewActivity] = useState(false);
+  const [newActivityName, setNewActivityName] = useState('');
+  const [activityError, setActivityError] = useState('');
+  const [addingActivity, setAddingActivity] = useState(false);
 
   useEffect(() => {
     supabase
@@ -38,6 +42,32 @@ export default function CreateItemPage() {
     setSelectedActivityIds((prev) =>
       prev.includes(id) ? prev.filter((a) => a !== id) : [...prev, id]
     );
+  }
+
+  async function addActivity() {
+    setActivityError('');
+    if (!newActivityName.trim()) return setActivityError('Please enter an activity name.');
+    setAddingActivity(true);
+
+    const { data, error: insertError } = await supabase
+      .from('activities')
+      .insert({ name: newActivityName.trim() })
+      .select()
+      .single();
+
+    if (insertError || !data) {
+      setActivityError('Could not create activity. It may already exist.');
+      setAddingActivity(false);
+      return;
+    }
+
+    setActivities((prev) =>
+      [...prev, data as Activity].sort((a, b) => a.name.localeCompare(b.name))
+    );
+    setSelectedActivityIds((prev) => [...prev, data.id]);
+    setNewActivityName('');
+    setShowNewActivity(false);
+    setAddingActivity(false);
   }
 
   async function handleSave() {
@@ -194,6 +224,46 @@ export default function CreateItemPage() {
                 );
               })}
             </div>
+
+            {/* Inline new activity form */}
+            {showNewActivity ? (
+              <div className="mt-3">
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={newActivityName}
+                    onChange={(e) => setNewActivityName(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && addActivity()}
+                    placeholder="Activity name"
+                    autoFocus
+                    className="flex-1 border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <button
+                    onClick={addActivity}
+                    disabled={addingActivity}
+                    className="px-3 py-2 bg-blue-500 text-white text-sm font-medium rounded-xl disabled:opacity-40"
+                  >
+                    {addingActivity ? 'Adding…' : 'Add'}
+                  </button>
+                  <button
+                    onClick={() => { setShowNewActivity(false); setNewActivityName(''); setActivityError(''); }}
+                    className="px-3 py-2 text-sm text-gray-500 border border-gray-300 rounded-xl"
+                  >
+                    Cancel
+                  </button>
+                </div>
+                {activityError && (
+                  <p className="text-xs text-red-500 mt-1">{activityError}</p>
+                )}
+              </div>
+            ) : (
+              <button
+                onClick={() => setShowNewActivity(true)}
+                className="mt-2 text-sm text-blue-500 font-medium"
+              >
+                + New activity
+              </button>
+            )}
           </div>
         )}
 

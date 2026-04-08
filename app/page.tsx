@@ -53,7 +53,19 @@ export default function HomePage() {
     <div className="flex flex-col min-h-full">
       {/* Header */}
       <div className="flex items-center justify-between px-4 pt-12 pb-4">
-        <h1 className="text-2xl font-bold">Zip It</h1>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => router.push('/settings')}
+            aria-label="Settings"
+            className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="8" r="4" />
+              <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
+            </svg>
+          </button>
+          <h1 className="text-2xl font-bold">Zip It</h1>
+        </div>
         <button
           onClick={() => router.push('/trip/create')}
           className="bg-blue-500 text-white text-sm font-semibold px-4 py-2 rounded-full"

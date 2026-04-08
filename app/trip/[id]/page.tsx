@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import supabase from '@/lib/supabase';
-import type { Trip, PackingListEntry, Item, CategoryType, AiSuggestion } from '@/types';
+import type { Trip, PackingListEntry, Item, CategoryType, AiSuggestion, TemperatureUnit } from '@/types';
 
 type EntryWithItem = PackingListEntry & { items: Item };
 
@@ -14,6 +14,11 @@ type WeatherSummary = {
   high: number;    // °C
   isClimatology: boolean;
 };
+
+// Converts a °C value to °F (rounded to nearest integer).
+function cToF(celsius: number): number {
+  return Math.round(celsius * 9 / 5 + 32);
+}
 
 // Maps WMO weather interpretation codes to a representative emoji.
 function weatherEmoji(code: number): string {
@@ -115,6 +120,7 @@ export default function PackingListPage() {
   // Weather
   const [weather, setWeather] = useState<WeatherSummary | null>(null);
   const [weatherLoading, setWeatherLoading] = useState(false);
+  const [tempUnit, setTempUnit] = useState<TemperatureUnit>('celsius');
 
   // AI suggestions
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -130,17 +136,19 @@ export default function PackingListPage() {
   async function fetchData() {
     setLoading(true);
 
-    const [tripRes, entriesRes] = await Promise.all([
+    const [tripRes, entriesRes, prefsRes] = await Promise.all([
       supabase.from('trips').select('*').eq('id', tripId).single(),
       supabase
         .from('packing_list_entries')
         .select('*, items(*)')
         .eq('trip_id', tripId)
         .order('items(name)'),
+      supabase.from('user_preferences').select('temperature_unit').limit(1).maybeSingle(),
     ]);
 
     if (tripRes.data) setTrip(tripRes.data as Trip);
     if (entriesRes.data) setEntries(entriesRes.data as EntryWithItem[]);
+    if (prefsRes.data?.temperature_unit) setTempUnit(prefsRes.data.temperature_unit as TemperatureUnit);
     setLoading(false);
 
     // Fetch weather after trip data is available, if a destination was set.
@@ -409,9 +417,14 @@ export default function PackingListPage() {
             {weather.label} · {formatDate(trip.start_date)}
             {trip.start_date !== trip.end_date && <>–{formatDate(trip.end_date)}</>}
             {' · '}{weather.emoji}{' '}
-            {weather.isClimatology
-              ? `Typically ${weather.low}–${weather.high}°C`
-              : `Low ${weather.low}°C / High ${weather.high}°C`}
+            {(() => {
+              const unit = tempUnit === 'fahrenheit' ? '°F' : '°C';
+              const lo = tempUnit === 'fahrenheit' ? cToF(weather.low) : weather.low;
+              const hi = tempUnit === 'fahrenheit' ? cToF(weather.high) : weather.high;
+              return weather.isClimatology
+                ? `Typically ${lo}–${hi}${unit}`
+                : `Low ${lo}${unit} / High ${hi}${unit}`;
+            })()}
           </p>
         </div>
       )}

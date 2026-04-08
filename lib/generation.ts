@@ -1,9 +1,14 @@
 import { supabase } from './supabase';
-import type { NewPackingListEntry } from '../types';
+import type { LaundryStyle, NewPackingListEntry } from '../types';
 
-// When laundry is available, cap per_night quantities at this many nights.
-// Assumes the traveller will do laundry at least once on longer trips.
-export const LAUNDRY_CAP = 4;
+// Maps the user's laundry style preference to a night cap for per_night items.
+// When laundry is available, per_night quantities are capped at this many nights.
+// "frequent" packers wash clothes often so need fewer; "infrequent" need more buffer.
+export const LAUNDRY_CAP_MAP: Record<LaundryStyle, number> = {
+  frequent: 3,
+  moderate: 5,
+  infrequent: 6,
+};
 
 /**
  * Generates a packing list for a trip and inserts the entries into the DB.
@@ -40,6 +45,16 @@ export async function generatePackingList(tripId: string): Promise<void> {
 
   // Number of nights: end_date - start_date (minimum 1 to avoid 0-quantity rows)
   const nights = Math.max(1, daysBetween(trip.start_date, trip.end_date));
+
+  // ── Step 1b: Fetch the user's laundry style preference ──────────────────────
+  // Falls back to 'moderate' if the row is missing (shouldn't happen after seeding).
+  const { data: prefsRow } = await supabase
+    .from('user_preferences')
+    .select('laundry_style')
+    .limit(1)
+    .maybeSingle();
+
+  const laundryCap = LAUNDRY_CAP_MAP[(prefsRow?.laundry_style ?? 'moderate') as LaundryStyle];
 
   // ── Step 2: Fetch all essential items ───────────────────────────────────────
   // These are always included regardless of trip activities.
@@ -110,7 +125,7 @@ export async function generatePackingList(tripId: string): Promise<void> {
     const matchCount = item.isEssential
       ? 0
       : (itemMatchingActivities.get(item.id) ?? []).length;
-    const quantity = calculateQuantity(item.quantity_type, nights, matchCount, item.isEssential, trip.laundry_available);
+    const quantity = calculateQuantity(item.quantity_type, nights, matchCount, item.isEssential, trip.laundry_available, laundryCap);
 
     return {
       trip_id: tripId,
@@ -138,16 +153,17 @@ export function calculateQuantity(
   nights: number,
   matchingActivityCount: number,
   isEssential: boolean = false,
-  laundryAvailable: boolean = false
+  laundryAvailable: boolean = false,
+  laundryCap: number = LAUNDRY_CAP_MAP.moderate
 ): number {
   switch (quantityType) {
     case 'fixed':
       return 1;
     case 'per_night': {
-      // If laundry is available, cap at LAUNDRY_CAP nights — no need to pack
+      // If laundry is available, cap at laundryCap nights — no need to pack
       // the full trip's worth of clothes when you can wash them.
       // Floor to 1 so same-day trips never produce 0-quantity rows.
-      const effective = laundryAvailable ? Math.min(nights, LAUNDRY_CAP) : nights;
+      const effective = laundryAvailable ? Math.min(nights, laundryCap) : nights;
       return Math.max(1, effective);
     }
     case 'per_activity':

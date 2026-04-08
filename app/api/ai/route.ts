@@ -16,6 +16,7 @@ type SuggestItemsRequest = {
   tripId: string;
   existingItems?: string[];   // names already on the list — AI won't repeat them
   weatherSummary?: string;    // optional formatted weather string, e.g. "Low 20°C / High 28°C"
+  aboutMe?: string;           // optional user self-description for personalised suggestions
 };
 
 type ParseTripDescriptionRequest = {
@@ -25,8 +26,10 @@ type ParseTripDescriptionRequest = {
 
 type SuggestInventoryItemsRequest = {
   action: 'suggest_inventory_items';
-  travelStyle: string;        // free-text description, e.g. "I travel for business"
+  aboutMe?: string;             // from user profile "About You"
+  extraContext?: string;        // additional context entered in the modal
   existingItemNames?: string[]; // names already in inventory — AI won't repeat them
+  activityNames?: string[];     // available activity names — AI picks which apply to each item
 };
 
 type AiRequest =
@@ -44,7 +47,8 @@ function parseRequest(body: unknown): AiRequest | null {
       ? b.existingItems.filter((x): x is string => typeof x === 'string')
       : [];
     const weatherSummary = typeof b.weatherSummary === 'string' ? b.weatherSummary : undefined;
-    return { action: 'suggest_items', tripId: b.tripId.trim(), existingItems, weatherSummary };
+    const aboutMe = typeof b.aboutMe === 'string' ? b.aboutMe : undefined;
+    return { action: 'suggest_items', tripId: b.tripId.trim(), existingItems, weatherSummary, aboutMe };
   }
 
   if (b.action === 'parse_trip_description') {
@@ -53,11 +57,15 @@ function parseRequest(body: unknown): AiRequest | null {
   }
 
   if (b.action === 'suggest_inventory_items') {
-    if (typeof b.travelStyle !== 'string' || b.travelStyle.trim() === '') return null;
+    const aboutMe = typeof b.aboutMe === 'string' && b.aboutMe.trim() ? b.aboutMe.trim() : undefined;
+    const extraContext = typeof b.extraContext === 'string' && b.extraContext.trim() ? b.extraContext.trim() : undefined;
     const existingItemNames = Array.isArray(b.existingItemNames)
       ? b.existingItemNames.filter((x): x is string => typeof x === 'string')
       : [];
-    return { action: 'suggest_inventory_items', travelStyle: b.travelStyle.trim(), existingItemNames };
+    const activityNames = Array.isArray(b.activityNames)
+      ? b.activityNames.filter((x): x is string => typeof x === 'string')
+      : [];
+    return { action: 'suggest_inventory_items', aboutMe, extraContext, existingItemNames, activityNames };
   }
 
   return null;
@@ -131,8 +139,17 @@ async function handleSuggestItems(req: SuggestItemsRequest) {
     .map((row) => row.activities)
     .filter(Boolean) as { id: string; name: string; created_at: string }[];
 
+  const { data: prefs } = await supabase
+    .from('user_preferences')
+    .select('about_me')
+    .limit(1)
+    .maybeSingle();
+
   const tripContext = buildTripContext(trip, activities, req.weatherSummary);
   const existingList = req.existingItems?.length ? req.existingItems.join(', ') : 'None';
+  const aboutMeSection = prefs?.about_me
+    ? `\n--- ABOUT THE TRAVELLER ---\n${prefs.about_me}\n`
+    : '';
 
   const prompt = `You are a packing assistant. Given the trip below, suggest up to 10 items the traveller may have forgotten.
 
@@ -143,7 +160,7 @@ Rules:
 - Do not include items already in their packing list (listed below).
 - Do not include explanatory text outside the JSON array.
 - Each "reason" should be one short sentence explaining why the item is relevant to this trip.
-
+${aboutMeSection}
 --- TRIP ---
 ${tripContext}
 
@@ -195,23 +212,39 @@ async function handleSuggestInventoryItems(req: SuggestInventoryItemsRequest) {
     ? req.existingItemNames.join(', ')
     : 'None';
 
-  const prompt = `You are a packing expert. Based on the travel style described below, suggest up to 15 items for a master packing inventory.
+  const contextParts = [req.aboutMe, req.extraContext].filter(Boolean);
+  const contextBlock = contextParts.length > 0
+    ? contextParts.join('\n\n')
+    : 'No specific context provided.';
+
+  const availableActivities = req.activityNames?.length
+    ? req.activityNames.join(', ')
+    : 'None';
+
+  const prompt = `You are a packing expert. Based on the traveler context below, suggest up to 15 items for a master packing inventory.
 
 Return ONLY a JSON array of objects with this exact shape:
-[{ "name": string, "category": "Clothing"|"Shoes"|"Toiletries"|"Accessories"|"Equipment", "quantityType": "fixed"|"per_night"|"per_activity", "reason": string }]
+[{ "name": string, "category": "Clothing"|"Shoes"|"Toiletries"|"Accessories"|"Equipment", "quantityType": "fixed"|"per_night"|"per_activity", "activities": string[], "reason": string }]
 
 quantityType guide:
 - "fixed"        → always pack exactly 1 (e.g. passport, laptop, charger)
 - "per_night"    → scales with trip length (e.g. socks, underwear, t-shirts)
 - "per_activity" → needed once per matching activity (e.g. golf glove, hiking boots)
 
+activities guide:
+- Set "activities" to a subset of the available activities listed below that this item is relevant to.
+- Use [] if the item applies to all trips regardless of activity (e.g. passport, charger).
+
 Rules:
 - Do not include items already in their inventory (listed below).
 - Do not include explanatory text outside the JSON array.
 - Each "reason" should be one short sentence.
 
---- TRAVEL STYLE ---
-${req.travelStyle}
+--- TRAVELER CONTEXT ---
+${contextBlock}
+
+--- AVAILABLE ACTIVITIES ---
+${availableActivities}
 
 --- EXISTING INVENTORY ---
 ${existingList}`;

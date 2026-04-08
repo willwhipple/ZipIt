@@ -2,27 +2,9 @@
 
 
 
-## Travel Mode
-- Add "How are you getting there?" to Create Trip: Flying, Train, Driving, Other.
-- Driving = no luggage restrictions. Flying/Train = respect carry-on only toggle and flag size limits.
+To Do
 
-## Add Item — Inline Activity Creation
-- When adding/editing an item, allow creating a new activity inline without leaving the form.
 
-## Weather — Temperature Unit Preference
-- Currently displays temperatures in °C.
-- Add a user setting to choose °C or °F.
-- Could live in a future Settings screen or as a toggle on the weather banner itself.
-
-## Laundry — Customisable Cap
-- Currently, enabling "Laundry Available" hard-caps all `per_night` items at `LAUNDRY_CAP = 4` nights.
-- Some users pack conservatively (happy with 3 nights); others pack a bit more buffer (prefer 5–6).
-- Add a laundry intensity preference, e.g. a slider or segmented control: **Light / Moderate / Heavy**.
-  - Light  → cap at 3 nights (pack very lean, wash often)
-  - Moderate → cap at 4 nights (current default)
-  - Heavy → cap at 6 nights (more buffer between washes)
-- Preference could live on the Create Trip form (next to the laundry toggle, revealed when it's on), or in a future Settings screen as a global default.
-- Implementation: replace the `LAUNDRY_CAP` constant with a value derived from the user's preference; pass it into `calculateQuantity` the same way the boolean is passed today.
 
 ## Conditional Item Rules Engine (deferred from Stage 2)
 - Allow users to define rules that conditionally include items based on trip context.
@@ -48,11 +30,15 @@
 - Root fix: enable billing on the Google Cloud project tied to `GEMINI_API_KEY` (negligible cost at this scale).
 - Possible improvement: detect the 429 status from the SDK specifically and surface "AI is busy — try again in a moment." vs the generic error for true outages.
 
-## About Me
-- Allow users to share any context about them that may be helpful to AI when thinking of things they might have forgotten. 
 
 ## Calendar Integration
-- Optional Calendar Sync to retreive any specific events that might be on the cal. 
+- Optional Calendar Sync to retreive any specific events that might be on the calendar during the planned trip. 
 
 - Ai assisted inventory prefill based on travel style
 - Weather aware packing suggestions
+
+BackLog
+
+## Travel Mode
+- Add "How are you getting there?" to Create Trip: Flying, Train, Driving, Other.
+- Driving = no luggage restrictions. Flying/Train = respect carry-on only toggle and flag size limits.
