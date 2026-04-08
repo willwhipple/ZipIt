@@ -183,7 +183,7 @@ export function parseInventorySuggestions(raw: string): InventorySuggestion[] {
         quantityType: item.quantityType as QuantityType,
         reason: item.reason.trim(),
         activities: Array.isArray(item.activities)
-          ? item.activities.filter((a): a is string => typeof a === 'string' && a.trim() !== '')
+          ? (item.activities as unknown[]).filter((a): a is string => typeof a === 'string' && a.trim() !== '')
           : [],
       });
     }
