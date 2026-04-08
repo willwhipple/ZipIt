@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import type { Trip } from '@/types';
+import LuggageSpinner from '@/components/LuggageSpinner';
 
 type TripWithProgress = Trip & {
   packing_list_entries: { id: string; packed: boolean }[];
@@ -43,17 +44,13 @@ export default function HomePage() {
   }
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
+    return <LuggageSpinner />;
   }
 
   return (
     <div className="flex flex-col min-h-full">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 pt-12 pb-4">
+      <div className="flex items-center justify-between px-4 pt-12 pb-4 bg-sky-50">
         <div className="flex items-center gap-2">
           <button
             onClick={() => router.push('/settings')}
@@ -65,11 +62,11 @@ export default function HomePage() {
               <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
             </svg>
           </button>
-          <h1 className="text-2xl font-bold">Zip It</h1>
+          <h1 className="text-2xl font-bold text-sky-500">Zip It</h1>
         </div>
         <button
           onClick={() => router.push('/trip/create')}
-          className="bg-blue-500 text-white text-sm font-semibold px-4 py-2 rounded-full"
+          className="bg-sky-500 text-white text-sm font-semibold px-4 py-2 rounded-full"
         >
           + New Trip
         </button>
@@ -85,7 +82,7 @@ export default function HomePage() {
           </p>
           <button
             onClick={() => router.push('/trip/create')}
-            className="mt-2 bg-blue-500 text-white font-semibold px-6 py-3 rounded-xl"
+            className="mt-2 bg-sky-500 text-white font-semibold px-6 py-3 rounded-xl"
           >
             Create Your First Trip
           </button>
@@ -97,7 +94,7 @@ export default function HomePage() {
           </button>
         </div>
       ) : (
-        <div className="flex flex-col gap-3 px-4">
+        <div className="flex flex-col gap-3 px-4 pt-4">
           {trips.map((trip) => {
             const total = trip.packing_list_entries.length;
             const packed = trip.packing_list_entries.filter((e) => e.packed).length;
@@ -116,14 +113,14 @@ export default function HomePage() {
                       {formatDate(trip.start_date)} — {formatDate(trip.end_date)}
                     </p>
                   </div>
-                  <span className="text-blue-500 text-xl">›</span>
+                  <span className="text-sky-500 text-xl">›</span>
                 </div>
 
                 {/* Progress bar */}
                 <div className="flex items-center gap-2">
                   <div className="flex-1 bg-gray-100 rounded-full h-2">
                     <div
-                      className="bg-blue-500 h-2 rounded-full transition-all"
+                      className="bg-sky-500 h-2 rounded-full transition-all"
                       style={{ width: `${progress}%` }}
                     />
                   </div>

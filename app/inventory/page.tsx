@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import type { Item, Activity, CategoryType, QuantityType, InventorySuggestion } from '@/types';
+import LuggageSpinner from '@/components/LuggageSpinner';
 
 type ItemWithActivities = Item & {
   item_activities: { activity_id: string }[];
@@ -31,7 +32,7 @@ export default function InventoryPage() {
   const [loading, setLoading] = useState(true);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
-  // AI inventory prefill
+  // Smart Suggestions inventory prefill
   const [showAIPrefill, setShowAIPrefill] = useState(false);
   const [aboutMe, setAboutMe] = useState('');
   const [extraContext, setExtraContext] = useState('');
@@ -218,22 +219,18 @@ export default function InventoryPage() {
   })).filter((g) => g.items.length > 0);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
+    return <LuggageSpinner />;
   }
 
   return (
     <div>
       {/* Header — two rows */}
-      <div className="px-4 pt-12 pb-4">
+      <div className="px-4 pt-12 pb-4 bg-sky-50">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold">My Stuff</h1>
           <button
             onClick={() => router.push('/inventory/item/create')}
-            className="bg-blue-500 text-white text-sm font-semibold px-4 py-2 rounded-full"
+            className="bg-sky-500 text-white text-sm font-semibold px-4 py-2 rounded-full"
           >
             + Add Item
           </button>
@@ -241,7 +238,7 @@ export default function InventoryPage() {
         <div className="flex items-center justify-between mt-1">
           <button
             onClick={() => router.push('/activities')}
-            className="text-sm text-blue-500 font-medium py-1"
+            className="text-sm text-sky-500 font-medium py-1"
           >
             Activities
           </button>
@@ -253,9 +250,9 @@ export default function InventoryPage() {
               setAiPrefillError('');
               setEditingSuggestion(null);
             }}
-            className="text-sm text-blue-500 font-medium py-1"
+            className="text-sm text-teal-400 font-medium py-1"
           >
-            ✦ Suggest Items
+            ✦ Smart Suggestions
           </button>
         </div>
       </div>
@@ -270,7 +267,7 @@ export default function InventoryPage() {
           </p>
           <button
             onClick={() => router.push('/inventory/item/create')}
-            className="mt-2 bg-blue-500 text-white font-semibold px-6 py-3 rounded-xl"
+            className="mt-2 bg-sky-500 text-white font-semibold px-6 py-3 rounded-xl"
           >
             Add Your First Item
           </button>
@@ -282,9 +279,9 @@ export default function InventoryPage() {
               setAiPrefillError('');
               setEditingSuggestion(null);
             }}
-            className="text-blue-500 text-sm font-medium"
+            className="text-teal-400 text-sm font-medium"
           >
-            ✦ Or build with AI
+            ✦ Or use Smart Suggestions
           </button>
         </div>
       )}
@@ -309,7 +306,7 @@ export default function InventoryPage() {
               <div className="flex gap-3">
                 <button
                   onClick={() => router.push(`/inventory/item/${item.id}`)}
-                  className="text-sm text-blue-500 font-medium"
+                  className="text-sm text-sky-500 font-medium"
                 >
                   Edit
                 </button>
@@ -325,12 +322,12 @@ export default function InventoryPage() {
         </div>
       ))}
 
-      {/* AI inventory prefill modal */}
+      {/* Smart Suggestions inventory prefill modal */}
       {showAIPrefill && (
         <div className="fixed inset-0 bg-black/40 flex items-end justify-center z-50">
           <div className="w-full max-w-[430px] bg-white rounded-t-2xl flex flex-col max-h-[85vh]">
             <div className="flex items-center justify-between px-6 pt-5 pb-3 border-b border-gray-100 flex-shrink-0">
-              <h3 className="text-lg font-semibold">Suggest Items ✦</h3>
+              <h3 className="text-lg font-semibold text-teal-600">✦ Smart Suggestions</h3>
               <button
                 onClick={() => setShowAIPrefill(false)}
                 className="text-gray-400 text-sm font-medium"
@@ -346,7 +343,7 @@ export default function InventoryPage() {
                 <div className="flex flex-col gap-4">
                   <button
                     onClick={() => setEditingSuggestion(null)}
-                    className="text-sm text-blue-500 font-medium self-start"
+                    className="text-sm text-sky-500 font-medium self-start"
                   >
                     ← Back to suggestions
                   </button>
@@ -358,7 +355,7 @@ export default function InventoryPage() {
                       type="text"
                       value={editName}
                       onChange={(e) => setEditName(e.target.value)}
-                      className="w-full border border-gray-300 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full border border-gray-300 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
                     />
                   </div>
 
@@ -372,7 +369,7 @@ export default function InventoryPage() {
                           onClick={() => setEditCategory(cat)}
                           className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${
                             editCategory === cat
-                              ? 'bg-blue-500 text-white border-blue-500'
+                              ? 'bg-sky-500 text-white border-sky-500'
                               : 'bg-white text-gray-600 border-gray-300'
                           }`}
                         >
@@ -391,20 +388,20 @@ export default function InventoryPage() {
                           key={value}
                           onClick={() => setEditQuantityType(value)}
                           className={`flex items-start gap-3 px-3 py-3 rounded-xl border text-left transition-colors ${
-                            editQuantityType === value ? 'border-blue-500 bg-blue-50' : 'border-gray-200'
+                            editQuantityType === value ? 'border-sky-500 bg-sky-50' : 'border-gray-200'
                           }`}
                         >
                           <div
                             className={`mt-0.5 w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${
-                              editQuantityType === value ? 'border-blue-500' : 'border-gray-300'
+                              editQuantityType === value ? 'border-sky-500' : 'border-gray-300'
                             }`}
                           >
                             {editQuantityType === value && (
-                              <div className="w-2 h-2 rounded-full bg-blue-500" />
+                              <div className="w-2 h-2 rounded-full bg-sky-500" />
                             )}
                           </div>
                           <div>
-                            <p className={`text-sm font-medium ${editQuantityType === value ? 'text-blue-700' : 'text-gray-800'}`}>
+                            <p className={`text-sm font-medium ${editQuantityType === value ? 'text-sky-700' : 'text-gray-800'}`}>
                               {label}
                             </p>
                             <p className="text-xs text-gray-400 mt-0.5">{description}</p>
@@ -427,7 +424,7 @@ export default function InventoryPage() {
                         onChange={(e) => setEditEssential(e.target.checked)}
                         className="sr-only peer"
                       />
-                      <div className="w-11 h-6 bg-gray-200 peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:bg-blue-500 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-5" />
+                      <div className="w-11 h-6 bg-gray-200 peer-focus:ring-2 peer-focus:ring-sky-500 rounded-full peer peer-checked:bg-sky-500 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-5" />
                     </label>
                   </div>
 
@@ -448,7 +445,7 @@ export default function InventoryPage() {
                               }
                               className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${
                                 selected
-                                  ? 'bg-blue-500 text-white border-blue-500'
+                                  ? 'bg-sky-500 text-white border-sky-500'
                                   : 'bg-white text-gray-600 border-gray-300'
                               }`}
                             >
@@ -463,7 +460,7 @@ export default function InventoryPage() {
                   <button
                     onClick={handleEditSave}
                     disabled={savingEdit || !editName.trim()}
-                    className="w-full bg-blue-500 text-white text-sm font-semibold py-3 rounded-xl disabled:opacity-50"
+                    className="w-full bg-sky-500 text-white text-sm font-semibold py-3 rounded-xl disabled:opacity-50"
                   >
                     {savingEdit ? 'Saving…' : 'Save & Add to Inventory'}
                   </button>
@@ -481,14 +478,14 @@ export default function InventoryPage() {
                     onChange={(e) => setExtraContext(e.target.value)}
                     placeholder='e.g. "Heading to Japan for two weeks" or "ski gear, formal dinner, carry-on only"'
                     rows={3}
-                    className="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                    className="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400 resize-none"
                   />
                   {aiPrefillError && (
                     <p className="text-xs text-red-500 mt-1">{aiPrefillError}</p>
                   )}
                   <button
                     onClick={loadInventorySuggestions}
-                    className="mt-3 w-full bg-blue-500 text-white text-sm font-semibold py-3 rounded-xl"
+                    className="mt-3 w-full bg-teal-400 text-white text-sm font-semibold py-3 rounded-xl"
                   >
                     Get Suggestions
                   </button>
@@ -498,7 +495,7 @@ export default function InventoryPage() {
               {/* ── Loading view ── */}
               {!editingSuggestion && aiPrefillLoading && (
                 <div className="flex items-center gap-2 py-8 justify-center">
-                  <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                  <div className="w-5 h-5 border-2 border-teal-400 border-t-transparent rounded-full animate-spin" />
                   <span className="text-sm text-gray-500">Thinking…</span>
                 </div>
               )}
@@ -532,7 +529,7 @@ export default function InventoryPage() {
                                   {s.quantityType.replace('_', ' ')}
                                 </span>
                                 {s.activities.map((act) => (
-                                  <span key={act} className="text-xs text-blue-500 bg-blue-50 px-2 py-0.5 rounded-full">
+                                  <span key={act} className="text-xs text-teal-600 bg-teal-50 px-2 py-0.5 rounded-full">
                                     {act}
                                   </span>
                                 ))}
@@ -548,7 +545,7 @@ export default function InventoryPage() {
                               <button
                                 onClick={() => addInventorySuggestion(s)}
                                 disabled={addingInventorySuggestion === s.name}
-                                className="bg-blue-500 text-white text-xs font-semibold px-3 py-1.5 rounded-full disabled:opacity-50"
+                                className="bg-teal-400 text-white text-xs font-semibold px-3 py-1.5 rounded-full disabled:opacity-50"
                               >
                                 {addingInventorySuggestion === s.name ? '…' : 'Add'}
                               </button>

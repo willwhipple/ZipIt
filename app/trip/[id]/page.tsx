@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import type { Trip, PackingListEntry, Item, CategoryType, AiSuggestion, TemperatureUnit } from '@/types';
+import LuggageSpinner from '@/components/LuggageSpinner';
 
 type EntryWithItem = PackingListEntry & { items: Item };
 
@@ -123,7 +124,7 @@ export default function PackingListPage() {
   const [weatherLoading, setWeatherLoading] = useState(false);
   const [tempUnit, setTempUnit] = useState<TemperatureUnit>('celsius');
 
-  // AI suggestions
+  // Smart Suggestions
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [suggestions, setSuggestions] = useState<AiSuggestion[]>([]);
   const [suggestionsLoading, setSuggestionsLoading] = useState(false);
@@ -338,11 +339,7 @@ export default function PackingListPage() {
   }
 
   if (loading || !trip) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
+    return <LuggageSpinner />;
   }
 
   const total = entries.length;
@@ -357,9 +354,9 @@ export default function PackingListPage() {
   return (
     <div className="flex flex-col min-h-full">
       {/* Header */}
-      <div className="px-4 pt-12 pb-4 border-b border-gray-100">
+      <div className="px-4 pt-12 pb-4 border-b border-gray-100 bg-sky-50">
         <div className="flex items-center gap-3 mb-3">
-          <button onClick={() => router.back()} className="text-blue-500 text-sm font-medium">
+          <button onClick={() => router.back()} className="text-sky-500 text-sm font-medium">
             ← Back
           </button>
           <div className="flex-1" />
@@ -385,7 +382,7 @@ export default function PackingListPage() {
         <div className="flex items-center gap-2 mt-3">
           <div className="flex-1 bg-gray-100 rounded-full h-2">
             <div
-              className="bg-blue-500 h-2 rounded-full transition-all"
+              className="bg-sky-500 h-2 rounded-full transition-all"
               style={{ width: `${progress}%` }}
             />
           </div>
@@ -394,12 +391,12 @@ export default function PackingListPage() {
           </span>
         </div>
 
-        {/* AI suggestions trigger — only shown for active trips */}
+        {/* Smart Suggestions trigger — only shown for active trips */}
         {!readOnly && (
           <button
             onClick={loadSuggestions}
             disabled={suggestionsLoading}
-            className="mt-2 text-xs text-blue-500 font-medium disabled:opacity-40"
+            className="mt-2 text-xs text-teal-400 font-medium disabled:opacity-40"
           >
             ✦ Suggest missing items
           </button>
@@ -449,7 +446,7 @@ export default function PackingListPage() {
                 {/* Checkbox */}
                 <div
                   className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
-                    entry.packed ? 'bg-blue-500 border-blue-500' : 'border-gray-300'
+                    entry.packed ? 'bg-sky-500 border-sky-500' : 'border-gray-300'
                   }`}
                 >
                   {entry.packed && (
@@ -483,7 +480,7 @@ export default function PackingListPage() {
       {!readOnly && (
         <button
           onClick={() => setShowAdHoc(true)}
-          className="fixed bottom-24 right-4 w-14 h-14 bg-blue-500 text-white rounded-full shadow-lg flex items-center justify-center text-2xl font-light"
+          className="fixed bottom-24 right-4 w-14 h-14 bg-sky-500 text-white rounded-full shadow-lg flex items-center justify-center text-2xl font-light"
           style={{ maxWidth: 'calc(215px)' }}
         >
           +
@@ -502,7 +499,7 @@ export default function PackingListPage() {
               onKeyDown={(e) => e.key === 'Enter' && addAdHocItem()}
               placeholder="Item name"
               autoFocus
-              className="w-full border border-gray-300 rounded-xl px-3 py-3 text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full border border-gray-300 rounded-xl px-3 py-3 text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-sky-500"
             />
             <div className="flex gap-3">
               <button
@@ -514,7 +511,7 @@ export default function PackingListPage() {
               <button
                 onClick={addAdHocItem}
                 disabled={adHocSaving || !adHocName.trim()}
-                className="flex-1 bg-blue-500 text-white font-semibold py-3 rounded-xl disabled:opacity-50"
+                className="flex-1 bg-sky-500 text-white font-semibold py-3 rounded-xl disabled:opacity-50"
               >
                 {adHocSaving ? 'Adding…' : 'Add'}
               </button>
@@ -535,7 +532,7 @@ export default function PackingListPage() {
             <div className="flex flex-col gap-2">
               <button
                 onClick={() => handleAdHocInventoryResponse('yes')}
-                className="w-full bg-blue-500 text-white font-semibold py-3 rounded-xl"
+                className="w-full bg-sky-500 text-white font-semibold py-3 rounded-xl"
               >
                 Yes — Add to Inventory
               </button>
@@ -556,22 +553,22 @@ export default function PackingListPage() {
         </div>
       )}
 
-      {/* Non-blocking thinking indicator — floats above nav while AI fetches suggestions */}
+      {/* Non-blocking thinking indicator — floats above nav while Smart Suggestions fetches */}
       {suggestionsLoading && (
         <div className="fixed bottom-20 left-1/2 -translate-x-1/2 w-full max-w-[430px] px-4 z-40 pointer-events-none">
           <div className="bg-white border border-gray-200 rounded-2xl px-4 py-3 shadow-lg flex items-center gap-3">
-            <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin flex-shrink-0" />
+            <div className="w-4 h-4 border-2 border-teal-400 border-t-transparent rounded-full animate-spin flex-shrink-0" />
             <span className="text-sm text-gray-600">Thinking about your packing list…</span>
           </div>
         </div>
       )}
 
-      {/* AI suggestions bottom sheet — shown only after results are ready */}
+      {/* Smart Suggestions bottom sheet — shown only after results are ready */}
       {showSuggestions && (
         <div className="fixed inset-0 bg-black/40 flex items-end justify-center z-50">
           <div className="w-full max-w-[430px] bg-white rounded-t-2xl flex flex-col max-h-[80vh]">
             <div className="flex items-center justify-between px-6 pt-5 pb-3 border-b border-gray-100 flex-shrink-0">
-              <h3 className="text-lg font-semibold">Smart Suggestions</h3>
+              <h3 className="text-lg font-semibold text-teal-600">✦ Smart Suggestions</h3>
               <button
                 onClick={() => setShowSuggestions(false)}
                 className="text-gray-400 text-sm font-medium"
@@ -602,7 +599,7 @@ export default function PackingListPage() {
                       <button
                         onClick={() => addSuggestion(s)}
                         disabled={addingSuggestion === s.name}
-                        className="flex-shrink-0 bg-blue-500 text-white text-xs font-semibold px-3 py-1.5 rounded-full disabled:opacity-50"
+                        className="flex-shrink-0 bg-teal-400 text-white text-xs font-semibold px-3 py-1.5 rounded-full disabled:opacity-50"
                       >
                         {addingSuggestion === s.name ? '…' : 'Add'}
                       </button>
@@ -630,7 +627,7 @@ export default function PackingListPage() {
             <div className="flex flex-col gap-2">
               <button
                 onClick={archiveTrip}
-                className="w-full bg-blue-500 text-white font-semibold py-3 rounded-xl"
+                className="w-full bg-sky-500 text-white font-semibold py-3 rounded-xl"
               >
                 Archive Trip
               </button>

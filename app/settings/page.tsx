@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import type { LaundryStyle, TemperatureUnit, UserPreferences } from '@/types';
+import LuggageSpinner from '@/components/LuggageSpinner';
 
 const LAUNDRY_OPTIONS: { value: LaundryStyle; label: string; description: string }[] = [
   { value: 'frequent', label: 'Frequent', description: 'I wash clothes often — pack lean' },
@@ -69,18 +70,14 @@ export default function SettingsPage() {
   }
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
+    return <LuggageSpinner />;
   }
 
   return (
     <div className="flex flex-col min-h-full">
       {/* Header */}
-      <div className="flex items-center gap-3 px-4 pt-12 pb-4 border-b border-gray-100">
-        <button onClick={() => router.back()} className="text-blue-500 text-sm font-medium">
+      <div className="flex items-center gap-3 px-4 pt-12 pb-4 border-b border-gray-100 bg-sky-50">
+        <button onClick={() => router.back()} className="text-sky-500 text-sm font-medium">
           ← Back
         </button>
         <h1 className="text-xl font-bold text-gray-900 flex-1">Settings</h1>
@@ -99,7 +96,7 @@ export default function SettingsPage() {
                 onClick={() => setTempUnit(unit)}
                 className={`flex-1 py-2.5 text-sm font-medium transition-colors ${
                   tempUnit === unit
-                    ? 'bg-blue-500 text-white'
+                    ? 'bg-sky-500 text-white'
                     : 'bg-white text-gray-600'
                 }`}
               >
@@ -122,21 +119,21 @@ export default function SettingsPage() {
                 onClick={() => setLaundryStyle(option.value)}
                 className={`flex items-center gap-3 px-4 py-3 rounded-xl border text-left transition-colors ${
                   laundryStyle === option.value
-                    ? 'border-blue-500 bg-blue-50'
+                    ? 'border-sky-500 bg-sky-50'
                     : 'border-gray-200 bg-white'
                 }`}
               >
                 <div
                   className={`w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${
-                    laundryStyle === option.value ? 'border-blue-500' : 'border-gray-300'
+                    laundryStyle === option.value ? 'border-sky-500' : 'border-gray-300'
                   }`}
                 >
                   {laundryStyle === option.value && (
-                    <div className="w-2 h-2 rounded-full bg-blue-500" />
+                    <div className="w-2 h-2 rounded-full bg-sky-500" />
                   )}
                 </div>
                 <div>
-                  <p className={`text-sm font-medium ${laundryStyle === option.value ? 'text-blue-700' : 'text-gray-800'}`}>
+                  <p className={`text-sm font-medium ${laundryStyle === option.value ? 'text-sky-700' : 'text-gray-800'}`}>
                     {option.label}
                   </p>
                   <p className="text-xs text-gray-400">{option.description}</p>
@@ -150,7 +147,7 @@ export default function SettingsPage() {
         <section>
           <h2 className="text-sm font-semibold text-gray-700 mb-1">About Me</h2>
           <p className="text-xs text-gray-400 mb-3">
-            Any context about you that helps the AI make better packing suggestions — travel style,
+            Any context about you that improves your Smart Suggestions — travel style,
             preferences, things you always forget.
           </p>
           <textarea
@@ -158,7 +155,7 @@ export default function SettingsPage() {
             onChange={(e) => setAboutMe(e.target.value)}
             placeholder="e.g. I run hot, always overpack shoes, and usually travel for work with one leisure day added on…"
             rows={4}
-            className="w-full border border-gray-200 rounded-xl px-3 py-3 text-sm text-gray-800 placeholder-gray-400 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full border border-gray-200 rounded-xl px-3 py-3 text-sm text-gray-800 placeholder-gray-400 resize-none focus:outline-none focus:ring-2 focus:ring-sky-500"
           />
         </section>
 
@@ -166,7 +163,7 @@ export default function SettingsPage() {
         <button
           onClick={handleSave}
           disabled={saving}
-          className="w-full bg-blue-500 text-white font-semibold py-3 rounded-xl disabled:opacity-50 transition-colors"
+          className="w-full bg-sky-500 text-white font-semibold py-3 rounded-xl disabled:opacity-50 transition-colors"
         >
           {saved ? 'Saved!' : saving ? 'Saving…' : 'Save Preferences'}
         </button>

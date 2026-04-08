@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import type { Trip } from '@/types';
+import LuggageSpinner from '@/components/LuggageSpinner';
 
 type TripWithProgress = Trip & {
   packing_list_entries: { id: string; packed: boolean }[];
@@ -65,19 +66,15 @@ export default function TripHistoryPage() {
   }
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
+    return <LuggageSpinner />;
   }
 
   return (
     <div className="flex flex-col min-h-full">
       {/* Header */}
-      <div className="px-4 pt-12 pb-4 border-b border-gray-100">
+      <div className="px-4 pt-12 pb-4 border-b border-gray-100 bg-sky-50">
         <div className="flex items-center gap-3 mb-3">
-          <button onClick={() => router.back()} className="text-blue-500 text-sm font-medium">
+          <button onClick={() => router.back()} className="text-sky-500 text-sm font-medium">
             ← Back
           </button>
         </div>
@@ -112,7 +109,7 @@ export default function TripHistoryPage() {
                   {nightCount(trip.start_date, trip.end_date)}
                 </p>
 
-                {/* Packed progress */}
+                {/* Packed progress — intentionally muted for archived trips */}
                 <div className="flex items-center gap-2">
                   <div className="flex-1 bg-gray-100 rounded-full h-1.5">
                     <div

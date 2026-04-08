@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import type { Activity } from '@/types';
+import LuggageSpinner from '@/components/LuggageSpinner';
 
 export default function ActivitiesPage() {
   const router = useRouter();
@@ -89,18 +90,14 @@ export default function ActivitiesPage() {
   }
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
+    return <LuggageSpinner />;
   }
 
   return (
     <div>
       {/* Header */}
-      <div className="flex items-center gap-3 px-4 pt-12 pb-4 border-b border-gray-100">
-        <button onClick={() => router.back()} className="text-blue-500 text-sm font-medium">
+      <div className="flex items-center gap-3 px-4 pt-12 pb-4 border-b border-gray-100 bg-sky-50">
+        <button onClick={() => router.back()} className="text-sky-500 text-sm font-medium">
           ← Back
         </button>
         <h1 className="text-lg font-semibold">Activities</h1>
@@ -115,12 +112,12 @@ export default function ActivitiesPage() {
             onChange={(e) => setNewName(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && addActivity()}
             placeholder="New activity name"
-            className="flex-1 border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="flex-1 border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
           />
           <button
             onClick={addActivity}
             disabled={adding}
-            className="bg-blue-500 text-white text-sm font-semibold px-4 py-2.5 rounded-xl disabled:opacity-50"
+            className="bg-sky-500 text-white text-sm font-semibold px-4 py-2.5 rounded-xl disabled:opacity-50"
           >
             Add
           </button>
@@ -143,11 +140,11 @@ export default function ActivitiesPage() {
                   if (e.key === 'Escape') setEditingId(null);
                 }}
                 autoFocus
-                className="flex-1 border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="flex-1 border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
               />
               <button
                 onClick={() => saveEdit(activity.id)}
-                className="text-sm text-blue-500 font-semibold"
+                className="text-sm text-sky-500 font-semibold"
               >
                 Save
               </button>
@@ -164,7 +161,7 @@ export default function ActivitiesPage() {
               <div className="flex gap-3">
                 <button
                   onClick={() => { setEditingId(activity.id); setEditName(activity.name); setDeleteError(''); }}
-                  className="text-sm text-blue-500 font-medium"
+                  className="text-sm text-sky-500 font-medium"
                 >
                   Edit
                 </button>

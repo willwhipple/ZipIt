@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import type { Activity, CategoryType, QuantityType } from '@/types';
+import LuggageSpinner from '@/components/LuggageSpinner';
 
 const CATEGORIES: CategoryType[] = ['Clothing', 'Shoes', 'Toiletries', 'Accessories', 'Equipment'];
 const QUANTITY_TYPES: { value: QuantityType; label: string; description: string }[] = [
@@ -117,25 +118,21 @@ export default function EditItemPage() {
   }
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
+    return <LuggageSpinner />;
   }
 
   return (
     <div className="flex flex-col min-h-full">
       {/* Header */}
-      <div className="flex items-center gap-3 px-4 pt-12 pb-4 border-b border-gray-100">
-        <button onClick={() => router.back()} className="text-blue-500 text-sm font-medium">
+      <div className="flex items-center gap-3 px-4 pt-12 pb-4 border-b border-gray-100 bg-sky-50">
+        <button onClick={() => router.back()} className="text-sky-500 text-sm font-medium">
           ← Back
         </button>
         <h1 className="text-lg font-semibold flex-1">Edit Item</h1>
         <button
           onClick={handleSave}
           disabled={saving}
-          className="text-blue-500 text-sm font-semibold disabled:opacity-40"
+          className="text-sky-500 text-sm font-semibold disabled:opacity-40"
         >
           {saving ? 'Saving…' : 'Save'}
         </button>
@@ -149,7 +146,7 @@ export default function EditItemPage() {
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="w-full border border-gray-300 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full border border-gray-300 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
           />
         </div>
 
@@ -163,7 +160,7 @@ export default function EditItemPage() {
                 onClick={() => setCategory(cat)}
                 className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${
                   category === cat
-                    ? 'bg-blue-500 text-white border-blue-500'
+                    ? 'bg-sky-500 text-white border-sky-500'
                     : 'bg-white text-gray-600 border-gray-300'
                 }`}
               >
@@ -183,21 +180,21 @@ export default function EditItemPage() {
                 onClick={() => setQuantityType(value)}
                 className={`flex items-start gap-3 px-3 py-3 rounded-xl border text-left transition-colors ${
                   quantityType === value
-                    ? 'border-blue-500 bg-blue-50'
+                    ? 'border-sky-500 bg-sky-50'
                     : 'border-gray-200'
                 }`}
               >
                 <div
                   className={`mt-0.5 w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${
-                    quantityType === value ? 'border-blue-500' : 'border-gray-300'
+                    quantityType === value ? 'border-sky-500' : 'border-gray-300'
                   }`}
                 >
                   {quantityType === value && (
-                    <div className="w-2 h-2 rounded-full bg-blue-500" />
+                    <div className="w-2 h-2 rounded-full bg-sky-500" />
                   )}
                 </div>
                 <div>
-                  <p className={`text-sm font-medium ${quantityType === value ? 'text-blue-700' : 'text-gray-800'}`}>
+                  <p className={`text-sm font-medium ${quantityType === value ? 'text-sky-700' : 'text-gray-800'}`}>
                     {label}
                   </p>
                   <p className="text-xs text-gray-400 mt-0.5">{description}</p>
@@ -220,7 +217,7 @@ export default function EditItemPage() {
               onChange={(e) => setEssential(e.target.checked)}
               className="sr-only peer"
             />
-            <div className="w-11 h-6 bg-gray-200 peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:bg-blue-500 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-5" />
+            <div className="w-11 h-6 bg-gray-200 peer-focus:ring-2 peer-focus:ring-sky-500 rounded-full peer peer-checked:bg-sky-500 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-5" />
           </label>
         </div>
 
@@ -237,7 +234,7 @@ export default function EditItemPage() {
                     onClick={() => toggleActivity(a.id)}
                     className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${
                       selected
-                        ? 'bg-blue-500 text-white border-blue-500'
+                        ? 'bg-sky-500 text-white border-sky-500'
                         : 'bg-white text-gray-600 border-gray-300'
                     }`}
                   >
@@ -258,12 +255,12 @@ export default function EditItemPage() {
                     onKeyDown={(e) => e.key === 'Enter' && addActivity()}
                     placeholder="Activity name"
                     autoFocus
-                    className="flex-1 border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="flex-1 border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
                   />
                   <button
                     onClick={addActivity}
                     disabled={addingActivity}
-                    className="px-3 py-2 bg-blue-500 text-white text-sm font-medium rounded-xl disabled:opacity-40"
+                    className="px-3 py-2 bg-sky-500 text-white text-sm font-medium rounded-xl disabled:opacity-40"
                   >
                     {addingActivity ? 'Adding…' : 'Add'}
                   </button>
@@ -281,7 +278,7 @@ export default function EditItemPage() {
             ) : (
               <button
                 onClick={() => setShowNewActivity(true)}
-                className="mt-2 text-sm text-blue-500 font-medium"
+                className="mt-2 text-sm text-sky-500 font-medium"
               >
                 + New activity
               </button>

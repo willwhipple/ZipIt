@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { generatePackingList } from '@/lib/generation';
 import type { Activity, AccommodationType, ParsedTripDescription } from '@/types';
+import LuggageSpinner from '@/components/LuggageSpinner';
 
 // Adds `days` to a YYYY-MM-DD string, returns YYYY-MM-DD.
 // Uses T00:00:00 suffix to avoid UTC-vs-local timezone offset shifting the date.
@@ -184,26 +185,30 @@ export default function CreateTripPage() {
       ? addDays(startDate, parseInt(nights))
       : '';
 
+  if (loading) {
+    return <LuggageSpinner />;
+  }
+
   return (
     <div className="flex flex-col min-h-full">
       {/* Header */}
-      <div className="flex items-center gap-3 px-4 pt-12 pb-4 border-b border-gray-100">
-        <button onClick={() => router.back()} className="text-blue-500 text-sm font-medium">
+      <div className="flex items-center gap-3 px-4 pt-12 pb-4 border-b border-gray-100 bg-sky-50">
+        <button onClick={() => router.back()} className="text-sky-500 text-sm font-medium">
           ← Back
         </button>
         <h1 className="text-lg font-semibold flex-1">New Trip</h1>
       </div>
 
       <div className="flex flex-col gap-5 px-4 py-5">
-        {/* Natural language description */}
-        <div className="bg-blue-50 rounded-2xl p-4">
-          <p className="text-sm font-medium text-blue-800 mb-2">✦ Describe your trip</p>
+        {/* Smart Suggestions — natural language description */}
+        <div className="bg-teal-50 rounded-2xl p-4">
+          <p className="text-sm font-medium text-teal-700 mb-2">✦ Describe your trip</p>
           {nlDone ? (
             <div className="flex items-center justify-between">
               <p className="text-sm text-green-700 font-medium">✓ Form filled from your description</p>
               <button
                 onClick={() => { setNlDone(false); setNlError(''); }}
-                className="text-xs text-blue-500 font-medium ml-3"
+                className="text-xs text-teal-500 font-medium ml-3"
               >
                 Edit
               </button>
@@ -215,13 +220,13 @@ export default function CreateTripPage() {
                 onChange={(e) => setNlDescription(e.target.value)}
                 placeholder={`e.g. "A long weekend in Paris for a friend's wedding, staying at a hotel, flying carry-on only"`}
                 rows={3}
-                className="w-full bg-white border border-blue-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                className="w-full bg-white border border-teal-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400 resize-none"
               />
               {nlError && <p className="text-xs text-red-500 mt-1">{nlError}</p>}
               <button
                 onClick={handleNLParse}
                 disabled={nlParsing || !nlDescription.trim()}
-                className="mt-2 w-full bg-blue-500 text-white text-sm font-semibold py-2.5 rounded-xl disabled:opacity-50"
+                className="mt-2 w-full bg-teal-400 text-white text-sm font-semibold py-2.5 rounded-xl disabled:opacity-50"
               >
                 {nlParsing ? 'Filling form…' : 'Fill form from description'}
               </button>
@@ -237,7 +242,7 @@ export default function CreateTripPage() {
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="e.g. Mexico City Weekend"
-            className="w-full border border-gray-300 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full border border-gray-300 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
           />
         </div>
 
@@ -249,7 +254,7 @@ export default function CreateTripPage() {
             value={destination}
             onChange={(e) => setDestination(e.target.value)}
             placeholder="e.g. Mexico City, Mexico"
-            className="w-full border border-gray-300 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full border border-gray-300 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
           />
           <p className="text-xs text-gray-400 mt-1">
             For best results, include city and country (e.g. Dublin, Ireland)
@@ -266,7 +271,7 @@ export default function CreateTripPage() {
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className="w-full border border-gray-300 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full border border-gray-300 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
               />
             </div>
 
@@ -280,7 +285,7 @@ export default function CreateTripPage() {
                   value={nights}
                   onChange={(e) => setNights(e.target.value)}
                   placeholder="e.g. 4"
-                  className="w-full border border-gray-300 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full border border-gray-300 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
                 />
               </div>
             ) : (
@@ -292,7 +297,7 @@ export default function CreateTripPage() {
                   value={endDate}
                   min={startDate ? addDays(startDate, 1) : ''}
                   onChange={(e) => setEndDate(e.target.value)}
-                  className="w-full border border-gray-300 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full border border-gray-300 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
                 />
               </div>
             )}
@@ -306,7 +311,7 @@ export default function CreateTripPage() {
             <button
               type="button"
               onClick={() => setEndDateMode(endDateMode === 'nights' ? 'manual' : 'nights')}
-              className="text-xs text-blue-500 font-medium ml-auto"
+              className="text-xs text-sky-500 font-medium ml-auto"
             >
               {endDateMode === 'nights' ? 'Enter end date manually' : 'Use number of nights instead'}
             </button>
@@ -325,7 +330,7 @@ export default function CreateTripPage() {
                   onClick={() => toggleActivity(a.id)}
                   className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${
                     selected
-                      ? 'bg-blue-500 text-white border-blue-500'
+                      ? 'bg-sky-500 text-white border-sky-500'
                       : 'bg-white text-gray-600 border-gray-300'
                   }`}
                 >
@@ -346,11 +351,11 @@ export default function CreateTripPage() {
                 onClick={() => setAccommodation(type)}
                 className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border text-sm text-left ${
                   accommodation === type
-                    ? 'border-blue-500 bg-blue-50 text-blue-700'
+                    ? 'border-sky-500 bg-sky-50 text-sky-700'
                     : 'border-gray-200 text-gray-700'
                 }`}
               >
-                {accommodation === type && <span className="text-blue-500">✓</span>}
+                {accommodation === type && <span className="text-sky-500">✓</span>}
                 {type}
               </button>
             ))}
@@ -371,7 +376,7 @@ export default function CreateTripPage() {
                 onChange={(e) => setCarryOnOnly(e.target.checked)}
                 className="sr-only peer"
               />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:bg-blue-500 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-5" />
+              <div className="w-11 h-6 bg-gray-200 peer-focus:ring-2 peer-focus:ring-sky-500 rounded-full peer peer-checked:bg-sky-500 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-5" />
             </label>
           </div>
           <div className="flex items-center justify-between py-2">
@@ -386,7 +391,7 @@ export default function CreateTripPage() {
                 onChange={(e) => setLaundryAvailable(e.target.checked)}
                 className="sr-only peer"
               />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:bg-blue-500 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-5" />
+              <div className="w-11 h-6 bg-gray-200 peer-focus:ring-2 peer-focus:ring-sky-500 rounded-full peer peer-checked:bg-sky-500 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-5" />
             </label>
           </div>
         </div>
@@ -402,9 +407,9 @@ export default function CreateTripPage() {
         <button
           onClick={handleSubmit}
           disabled={loading}
-          className="w-full bg-blue-500 text-white font-semibold py-4 rounded-xl mt-2 disabled:opacity-50"
+          className="w-full bg-sky-500 text-white font-semibold py-4 rounded-xl mt-2 disabled:opacity-50"
         >
-          {loading ? 'Generating Packing List…' : 'Generate Packing List'}
+          Generate Packing List
         </button>
       </div>
     </div>

@@ -21,11 +21,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </main>
 
           {/* Bottom tab nav */}
-          <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] bg-white border-t border-gray-200 flex">
+          <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] bg-white border-t border-gray-100 flex">
             <Link
               href="/"
               className={`flex-1 flex flex-col items-center justify-center py-3 text-xs gap-1 ${
-                isHome ? 'text-blue-500' : 'text-gray-400'
+                isHome ? 'text-sky-500' : 'text-gray-400'
               }`}
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -36,7 +36,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <Link
               href="/inventory"
               className={`flex-1 flex flex-col items-center justify-center py-3 text-xs gap-1 ${
-                isInventory ? 'text-blue-500' : 'text-gray-400'
+                isInventory ? 'text-sky-500' : 'text-gray-400'
               }`}
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
