@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import supabase from '@/lib/supabase';
+import { createClient } from '@/lib/supabase/client';
 import type { Item, Activity, CategoryType, QuantityType, InventorySuggestion } from '@/types';
 
 type ItemWithActivities = Item & {
@@ -26,6 +26,7 @@ const QUANTITY_TYPES: { value: QuantityType; label: string; description: string 
 
 export default function InventoryPage() {
   const router = useRouter();
+  const supabase = createClient();
   const [items, setItems] = useState<ItemWithActivities[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);

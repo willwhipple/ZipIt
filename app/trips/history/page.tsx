@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import supabase from '@/lib/supabase';
+import { createClient } from '@/lib/supabase/client';
 import type { Trip } from '@/types';
 
 type TripWithProgress = Trip & {
@@ -11,6 +11,7 @@ type TripWithProgress = Trip & {
 
 export default function TripHistoryPage() {
   const router = useRouter();
+  const supabase = createClient();
   const [trips, setTrips] = useState<TripWithProgress[]>([]);
   const [loading, setLoading] = useState(true);
 

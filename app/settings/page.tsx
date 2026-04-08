@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import supabase from '@/lib/supabase';
+import { createClient } from '@/lib/supabase/client';
 import type { LaundryStyle, TemperatureUnit, UserPreferences } from '@/types';
 
 const LAUNDRY_OPTIONS: { value: LaundryStyle; label: string; description: string }[] = [
@@ -13,6 +13,7 @@ const LAUNDRY_OPTIONS: { value: LaundryStyle; label: string; description: string
 
 export default function SettingsPage() {
   const router = useRouter();
+  const supabase = createClient();
 
   const [prefs, setPrefs] = useState<UserPreferences | null>(null);
   const [loading, setLoading] = useState(true);
@@ -168,6 +169,17 @@ export default function SettingsPage() {
           className="w-full bg-blue-500 text-white font-semibold py-3 rounded-xl disabled:opacity-50 transition-colors"
         >
           {saved ? 'Saved!' : saving ? 'Saving…' : 'Save Preferences'}
+        </button>
+
+        {/* Sign out */}
+        <button
+          onClick={async () => {
+            await supabase.auth.signOut();
+            router.push('/login');
+          }}
+          className="w-full text-sm text-red-400 font-medium py-2 text-center"
+        >
+          Sign out
         </button>
       </div>
     </div>

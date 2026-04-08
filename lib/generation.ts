@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import type { LaundryStyle, NewPackingListEntry } from '../types';
 
 // Maps the user's laundry style preference to a night cap for per_night items.
@@ -23,7 +23,8 @@ export const LAUNDRY_CAP_MAP: Record<LaundryStyle, number> = {
  *    - per_activity → count of overlapping activities (essential items default to 1)
  * 5. Batch-insert one packing_list_entry per item
  */
-export async function generatePackingList(tripId: string): Promise<void> {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function generatePackingList(supabase: SupabaseClient<any>, tripId: string): Promise<void> {
   // ── Step 1: Fetch the trip's dates and activity IDs ─────────────────────────
 
   const { data: trip, error: tripError } = await supabase

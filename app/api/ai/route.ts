@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '../../../lib/supabase';
+import { createClient } from '../../../lib/supabase/server';
 import {
   buildTripContext,
   askGemini,
@@ -74,6 +74,12 @@ function parseRequest(body: unknown): AiRequest | null {
 // ── Route handler ─────────────────────────────────────────────────────────────
 
 export async function POST(req: NextRequest) {
+  const supabaseAuth = await createClient();
+  const { data: { user } } = await supabaseAuth.auth.getUser();
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   let body: unknown;
   try {
     body = await req.json();
@@ -113,8 +119,7 @@ async function callGeminiSafely(prompt: string) {
 // ── suggest_items ─────────────────────────────────────────────────────────────
 
 async function handleSuggestItems(req: SuggestItemsRequest) {
-  // NOTE: Once Stage 1.1 auth is added, validate the session here and use a
-  // user-scoped client to ensure the trip belongs to the requesting user.
+  const supabase = await createClient();
   const { data: trip, error: tripError } = await supabase
     .from('trips')
     .select('id, name, start_date, end_date, accommodation_type, carry_on_only, laundry_available')

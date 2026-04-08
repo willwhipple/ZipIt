@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import supabase from '@/lib/supabase';
+import { createClient } from '@/lib/supabase/client';
 import { generatePackingList } from '@/lib/generation';
 import type { Activity, AccommodationType, ParsedTripDescription } from '@/types';
 
@@ -24,6 +24,7 @@ const ACCOMMODATION_TYPES: AccommodationType[] = [
 
 export default function CreateTripPage() {
   const router = useRouter();
+  const supabase = createClient();
 
   const [name, setName] = useState('');
   const [destination, setDestination] = useState('');
@@ -172,7 +173,7 @@ export default function CreateTripPage() {
       );
     }
 
-    await generatePackingList(trip.id);
+    await generatePackingList(supabase, trip.id);
 
     router.replace(`/trip/${trip.id}`);
   }

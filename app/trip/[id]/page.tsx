@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import supabase from '@/lib/supabase';
+import { createClient } from '@/lib/supabase/client';
 import type { Trip, PackingListEntry, Item, CategoryType, AiSuggestion, TemperatureUnit } from '@/types';
 
 type EntryWithItem = PackingListEntry & { items: Item };
@@ -96,6 +96,7 @@ const CATEGORY_ORDER: CategoryType[] = [
 export default function PackingListPage() {
   const router = useRouter();
   const { id: tripId } = useParams<{ id: string }>();
+  const supabase = createClient();
 
   const [trip, setTrip] = useState<Trip | null>(null);
   const [entries, setEntries] = useState<EntryWithItem[]>([]);
