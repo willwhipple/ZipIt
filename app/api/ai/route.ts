@@ -136,8 +136,7 @@ async function handleSuggestItems(req: SuggestItemsRequest) {
   }
 
   const activities = (tripActivityRows ?? [])
-    .map((row) => row.activities)
-    .filter(Boolean) as { id: string; name: string; created_at: string }[];
+    .flatMap((row) => row.activities ?? []) as { id: string; name: string; created_at: string }[];
 
   const { data: prefs } = await supabase
     .from('user_preferences')
