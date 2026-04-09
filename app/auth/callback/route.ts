@@ -25,5 +25,8 @@ export async function GET(request: NextRequest) {
     await supabase.auth.exchangeCodeForSession(code);
   }
 
-  return NextResponse.redirect(`${origin}/`);
+  // Support a ?next= param so password-reset links can land on /auth/reset
+  // after the session is established. Default to home.
+  const next = searchParams.get('next') ?? '/';
+  return NextResponse.redirect(`${origin}${next}`);
 }
