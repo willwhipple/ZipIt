@@ -100,7 +100,7 @@ export default function ActivitiesPage() {
         <button onClick={() => router.back()} className="text-sky-500 text-sm font-medium">
           ← Back
         </button>
-        <h1 className="text-lg font-semibold">Activities</h1>
+        <h1 className="text-lg font-semibold font-logo text-sky-500">Activities</h1>
       </div>
 
       {/* Add new activity */}

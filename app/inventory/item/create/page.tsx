@@ -105,7 +105,7 @@ export default function CreateItemPage() {
         <button onClick={() => router.back()} className="text-sky-500 text-sm font-medium">
           ← Back
         </button>
-        <h1 className="text-lg font-semibold flex-1">Add Item</h1>
+        <h1 className="text-lg font-semibold font-logo text-sky-500 flex-1">Add Item</h1>
         <button
           onClick={handleSave}
           disabled={saving}

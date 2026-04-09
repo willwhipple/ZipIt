@@ -5,6 +5,7 @@ import { useRouter, useParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import type { Trip, PackingListEntry, Item, CategoryType, AiSuggestion, TemperatureUnit } from '@/types';
 import LuggageSpinner from '@/components/LuggageSpinner';
+import SuitcaseIcon from '@/components/SuitcaseIcon';
 
 type EntryWithItem = PackingListEntry & { items: Item };
 
@@ -373,7 +374,7 @@ export default function PackingListPage() {
             </button>
           )}
         </div>
-        <h1 className="text-xl font-bold text-gray-900">{trip.name}</h1>
+        <h1 className="text-xl font-bold font-logo text-sky-500">{trip.name}</h1>
         <p className="text-sm text-gray-500 mt-0.5">
           {formatDate(trip.start_date)} — {formatDate(trip.end_date)}
         </p>
@@ -557,7 +558,7 @@ export default function PackingListPage() {
       {suggestionsLoading && (
         <div className="fixed bottom-20 left-1/2 -translate-x-1/2 w-full max-w-[430px] px-4 z-40 pointer-events-none">
           <div className="bg-white border border-gray-200 rounded-2xl px-4 py-3 shadow-lg flex items-center gap-3">
-            <div className="w-4 h-4 border-2 border-teal-400 border-t-transparent rounded-full animate-spin flex-shrink-0" />
+            <SuitcaseIcon size={16} className="luggage-spin-icon text-teal-400 flex-shrink-0" />
             <span className="text-sm text-gray-600">Thinking about your packing list…</span>
           </div>
         </div>

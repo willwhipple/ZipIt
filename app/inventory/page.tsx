@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import type { Item, Activity, CategoryType, QuantityType, InventorySuggestion } from '@/types';
 import LuggageSpinner from '@/components/LuggageSpinner';
+import SuitcaseIcon from '@/components/SuitcaseIcon';
 
 type ItemWithActivities = Item & {
   item_activities: { activity_id: string }[];
@@ -227,7 +228,7 @@ export default function InventoryPage() {
       {/* Header — two rows */}
       <div className="px-4 pt-12 pb-4 bg-sky-50">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold">My Stuff</h1>
+          <h1 className="text-2xl font-bold font-logo text-sky-500">My Stuff</h1>
           <button
             onClick={() => router.push('/inventory/item/create')}
             className="bg-sky-500 text-white text-sm font-semibold px-4 py-2 rounded-full"
@@ -495,7 +496,7 @@ export default function InventoryPage() {
               {/* ── Loading view ── */}
               {!editingSuggestion && aiPrefillLoading && (
                 <div className="flex items-center gap-2 py-8 justify-center">
-                  <div className="w-5 h-5 border-2 border-teal-400 border-t-transparent rounded-full animate-spin" />
+                  <SuitcaseIcon size={20} className="luggage-spin-icon text-teal-400" />
                   <span className="text-sm text-gray-500">Thinking…</span>
                 </div>
               )}

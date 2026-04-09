@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import type { Trip } from '@/types';
 import LuggageSpinner from '@/components/LuggageSpinner';
+import SuitcaseIcon from '@/components/SuitcaseIcon';
+import AppLogo from '@/components/AppLogo';
 
 type TripWithProgress = Trip & {
   packing_list_entries: { id: string; packed: boolean }[];
@@ -55,14 +57,14 @@ export default function HomePage() {
           <button
             onClick={() => router.push('/settings')}
             aria-label="Settings"
-            className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600"
+            className="w-10 h-10 flex items-center justify-center rounded-full border-2 border-sky-200 text-sky-400 hover:border-sky-400 hover:text-sky-500 transition-colors"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="12" cy="8" r="4" />
               <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
             </svg>
           </button>
-          <h1 className="text-2xl font-bold text-sky-500">Zip It</h1>
+          <h1><AppLogo size="md" colorScheme="brand" /></h1>
         </div>
         <button
           onClick={() => router.push('/trip/create')}
@@ -75,7 +77,7 @@ export default function HomePage() {
       {/* Content */}
       {trips.length === 0 ? (
         <div className="flex-1 flex flex-col items-center justify-center px-6 text-center gap-4">
-          <div className="text-5xl">🧳</div>
+          <SuitcaseIcon size={48} className="text-sky-500" />
           <h2 className="text-xl font-semibold text-gray-800">No trips yet</h2>
           <p className="text-gray-500 text-sm">
             Create your first trip to generate a packing list, or head to Inventory to add items.

@@ -3,6 +3,15 @@
 import './globals.css';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { Boldonse } from 'next/font/google';
+
+const boldonse = Boldonse({
+  subsets: ['latin'],
+  variable: '--font-boldonse',
+  display: 'swap',
+  weight: '400',
+  adjustFontFallback: false,
+});
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -11,7 +20,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   const isInventory = pathname.startsWith('/inventory') || pathname.startsWith('/activities');
 
   return (
-    <html lang="en">
+    <html lang="en" className={boldonse.variable}>
       <body className="bg-gray-50 text-gray-900">
         {/* Mobile-width container centered on desktop */}
         <div className="max-w-[430px] mx-auto min-h-dvh relative flex flex-col bg-white">

@@ -78,7 +78,7 @@ export default function TripHistoryPage() {
             ← Back
           </button>
         </div>
-        <h1 className="text-2xl font-bold text-gray-900">Past Trips</h1>
+        <h1 className="text-2xl font-bold font-logo text-sky-500">Past Trips</h1>
       </div>
 
       {/* Content */}

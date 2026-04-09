@@ -80,7 +80,7 @@ export default function SettingsPage() {
         <button onClick={() => router.back()} className="text-sky-500 text-sm font-medium">
           ← Back
         </button>
-        <h1 className="text-xl font-bold text-gray-900 flex-1">Settings</h1>
+        <h1 className="text-xl font-bold font-logo text-sky-500 flex-1">Settings</h1>
       </div>
 
       <div className="flex flex-col gap-6 px-4 py-6">

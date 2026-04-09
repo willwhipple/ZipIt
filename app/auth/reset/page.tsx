@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import AppLogo from '@/components/AppLogo';
 
 export default function ResetPasswordPage() {
   const router = useRouter();
@@ -60,7 +61,9 @@ export default function ResetPasswordPage() {
     <div className="flex flex-col items-center justify-center min-h-dvh px-6 bg-white">
       <div className="w-full max-w-sm">
         <div className="text-center mb-10">
-          <h1 className="text-3xl font-bold text-gray-900">Zip It</h1>
+          <h1 className="flex justify-center mb-2">
+            <AppLogo size="lg" colorScheme="brand" />
+          </h1>
           <p className="text-sm text-gray-500 mt-1">Set a new password</p>
         </div>
 

@@ -196,7 +196,7 @@ export default function CreateTripPage() {
         <button onClick={() => router.back()} className="text-sky-500 text-sm font-medium">
           ← Back
         </button>
-        <h1 className="text-lg font-semibold flex-1">New Trip</h1>
+        <h1 className="text-lg font-semibold font-logo text-sky-500 flex-1">New Trip</h1>
       </div>
 
       <div className="flex flex-col gap-5 px-4 py-5">

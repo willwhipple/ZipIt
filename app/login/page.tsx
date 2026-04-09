@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import AppLogo from '@/components/AppLogo';
 
 type Mode = 'signin' | 'signup' | 'forgot';
 
@@ -124,7 +125,7 @@ export default function LoginPage() {
           </p>
           <button
             onClick={() => { setConfirmSent(false); setEmail(''); setPassword(''); }}
-            className="mt-6 text-sm text-blue-500 font-medium"
+            className="mt-6 text-sm text-sky-500 font-medium"
           >
             Use a different email
           </button>
@@ -147,7 +148,7 @@ export default function LoginPage() {
           </p>
           <button
             onClick={() => { setResetSent(false); switchMode('signin'); }}
-            className="mt-6 text-sm text-blue-500 font-medium"
+            className="mt-6 text-sm text-sky-500 font-medium"
           >
             Back to sign in
           </button>
@@ -161,7 +162,9 @@ export default function LoginPage() {
       <div className="w-full max-w-sm">
         {/* Logo / title */}
         <div className="text-center mb-10">
-          <h1 className="text-3xl font-bold text-gray-900">Zip It</h1>
+          <h1 className="flex justify-center mb-2">
+            <AppLogo size="lg" colorScheme="brand" />
+          </h1>
           <p className="text-sm text-gray-500 mt-1">Your personal packing list</p>
         </div>
 
@@ -184,7 +187,7 @@ export default function LoginPage() {
                   placeholder="you@example.com"
                   autoFocus
                   autoComplete="email"
-                  className="w-full border border-gray-300 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full border border-gray-300 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
                 />
               </div>
 
@@ -193,7 +196,7 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-blue-500 text-white font-semibold py-3 rounded-xl disabled:opacity-50 transition-colors"
+                className="w-full bg-sky-500 text-white font-semibold py-3 rounded-xl disabled:opacity-50 transition-colors"
               >
                 {loading ? 'Sending…' : 'Send reset link'}
               </button>
@@ -201,7 +204,7 @@ export default function LoginPage() {
 
             <button
               onClick={() => switchMode('signin')}
-              className="mt-5 w-full text-sm text-center text-blue-500 font-medium"
+              className="mt-5 w-full text-sm text-center text-sky-500 font-medium"
             >
               Back to sign in
             </button>
@@ -214,7 +217,7 @@ export default function LoginPage() {
                 type="button"
                 onClick={() => switchMode('signin')}
                 className={`flex-1 py-2.5 text-sm font-medium transition-colors ${
-                  mode === 'signin' ? 'bg-blue-500 text-white' : 'bg-white text-gray-600'
+                  mode === 'signin' ? 'bg-sky-500 text-white' : 'bg-white text-gray-600'
                 }`}
               >
                 Sign in
@@ -223,7 +226,7 @@ export default function LoginPage() {
                 type="button"
                 onClick={() => switchMode('signup')}
                 className={`flex-1 py-2.5 text-sm font-medium transition-colors ${
-                  mode === 'signup' ? 'bg-blue-500 text-white' : 'bg-white text-gray-600'
+                  mode === 'signup' ? 'bg-sky-500 text-white' : 'bg-white text-gray-600'
                 }`}
               >
                 Create account
@@ -242,7 +245,7 @@ export default function LoginPage() {
                   placeholder="you@example.com"
                   autoFocus
                   autoComplete="email"
-                  className="w-full border border-gray-300 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full border border-gray-300 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
                 />
               </div>
 
@@ -256,7 +259,7 @@ export default function LoginPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder={mode === 'signup' ? 'At least 6 characters' : ''}
                   autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
-                  className="w-full border border-gray-300 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full border border-gray-300 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
                 />
               </div>
 
@@ -265,7 +268,7 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-blue-500 text-white font-semibold py-3 rounded-xl disabled:opacity-50 transition-colors"
+                className="w-full bg-sky-500 text-white font-semibold py-3 rounded-xl disabled:opacity-50 transition-colors"
               >
                 {loading
                   ? mode === 'signin' ? 'Signing in…' : 'Creating account…'
@@ -277,7 +280,7 @@ export default function LoginPage() {
                 <button
                   type="button"
                   onClick={() => switchMode('forgot')}
-                  className="text-sm text-center text-blue-500 font-medium"
+                  className="text-sm text-center text-sky-500 font-medium"
                 >
                   Forgot password?
                 </button>
