@@ -13,13 +13,6 @@ export type CategoryType =
 // per_activity → scales with matching activity count (e.g. golf shirt per round)
 export type QuantityType = 'fixed' | 'per_night' | 'per_activity';
 
-export type AccommodationType =
-  | 'Hotel'
-  | 'Airbnb'
-  | 'Camping'
-  | 'Staying with someone'
-  | 'Other';
-
 // ── Row types ──────────────────────────────────────────────────────────────────
 // One type per DB table. Field names match column names exactly.
 
@@ -49,7 +42,6 @@ export type Trip = {
   start_date: string; // ISO date string (YYYY-MM-DD)
   end_date: string;   // ISO date string (YYYY-MM-DD)
   destination: string | null;
-  accommodation_type: AccommodationType;
   carry_on_only: boolean;
   laundry_available: boolean;
   archived: boolean;
@@ -121,7 +113,6 @@ export type ParsedTripDescription = {
   startDate?: string;        // YYYY-MM-DD
   endDate?: string;          // YYYY-MM-DD
   activities?: string[];     // activity names
-  accommodationType?: AccommodationType;
   carryOnOnly?: boolean;
   laundryAvailable?: boolean;
 };

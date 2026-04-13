@@ -96,9 +96,9 @@ export default function ActivitiesPage() {
   return (
     <div>
       {/* Header */}
-      <div className="flex items-center gap-3 px-4 pt-12 pb-4 border-b border-gray-100 bg-sky-50">
-        <button onClick={() => router.back()} className="text-sky-500 text-sm font-medium">
-          ← Back
+      <div className="header-noise flex items-center gap-3 px-4 pt-12 pb-4 bg-gradient-to-b from-sky-50 to-white">
+        <button onClick={() => router.back()} aria-label="Back" className="text-sky-500 -ml-1">
+          <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" /></svg>
         </button>
         <h1 className="text-lg font-semibold font-logo text-sky-500">Activities</h1>
       </div>
@@ -117,7 +117,7 @@ export default function ActivitiesPage() {
           <button
             onClick={addActivity}
             disabled={adding}
-            className="bg-sky-500 text-white text-sm font-semibold px-4 py-2.5 rounded-xl disabled:opacity-50"
+            className="bg-gradient-to-b from-sky-400 to-sky-600 text-white text-sm font-semibold px-4 py-2.5 rounded-xl disabled:opacity-50 shadow-sky-sm"
           >
             Add
           </button>
@@ -185,8 +185,9 @@ export default function ActivitiesPage() {
 
       {/* Delete confirm overlay */}
       {deleteConfirm && (
-        <div className="fixed inset-0 bg-black/40 flex items-end justify-center z-50">
-          <div className="w-full max-w-[430px] bg-white rounded-t-2xl p-6">
+        <div className="fixed inset-0 bg-black/50 flex items-end justify-center z-50">
+          <div className="w-full max-w-[430px] bg-white rounded-t-3xl p-6 pt-4">
+            <div className="sheet-handle" />
             <h3 className="text-lg font-semibold mb-2">Delete Activity?</h3>
             <p className="text-gray-500 text-sm mb-6">
               This activity will be removed. Items assigned to it will lose this activity tag.
@@ -200,7 +201,7 @@ export default function ActivitiesPage() {
               </button>
               <button
                 onClick={() => setDeleteConfirm(null)}
-                className="w-full bg-gray-100 text-gray-700 font-semibold py-3 rounded-xl"
+                className="w-full bg-white text-gray-700 font-semibold py-3 rounded-xl border border-gray-200 shadow-sm"
               >
                 Cancel
               </button>

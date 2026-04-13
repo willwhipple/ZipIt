@@ -114,7 +114,7 @@ export default function LoginPage() {
   // Post-signup: waiting for email confirmation
   if (confirmSent) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-dvh px-6 bg-white">
+      <div className="flex flex-col items-center justify-center min-h-dvh px-6 bg-gradient-to-b from-sky-50 via-white to-white">
         <div className="w-full max-w-sm text-center">
           <div className="text-4xl mb-4">📬</div>
           <h2 className="text-lg font-semibold text-gray-900 mb-2">Check your email</h2>
@@ -137,7 +137,7 @@ export default function LoginPage() {
   // Post-reset-request: waiting for reset email
   if (resetSent) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-dvh px-6 bg-white">
+      <div className="flex flex-col items-center justify-center min-h-dvh px-6 bg-gradient-to-b from-sky-50 via-white to-white">
         <div className="w-full max-w-sm text-center">
           <div className="text-4xl mb-4">🔑</div>
           <h2 className="text-lg font-semibold text-gray-900 mb-2">Check your email</h2>
@@ -158,7 +158,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-dvh px-6 bg-white">
+    <div className="flex flex-col items-center justify-center min-h-dvh px-6 bg-gradient-to-b from-sky-50 via-white to-white">
       <div className="w-full max-w-sm">
         {/* Logo / title */}
         <div className="text-center mb-10">
@@ -196,7 +196,7 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-sky-500 text-white font-semibold py-3 rounded-xl disabled:opacity-50 transition-colors"
+                className="w-full bg-gradient-to-b from-sky-400 to-sky-600 text-white font-semibold py-3 rounded-xl disabled:opacity-50 transition-colors shadow-sky-sm"
               >
                 {loading ? 'Sending…' : 'Send reset link'}
               </button>
@@ -217,7 +217,7 @@ export default function LoginPage() {
                 type="button"
                 onClick={() => switchMode('signin')}
                 className={`flex-1 py-2.5 text-sm font-medium transition-colors ${
-                  mode === 'signin' ? 'bg-sky-500 text-white' : 'bg-white text-gray-600'
+                  mode === 'signin' ? 'bg-gradient-to-b from-sky-400 to-sky-600 text-white' : 'bg-white text-gray-600'
                 }`}
               >
                 Sign in
@@ -226,7 +226,7 @@ export default function LoginPage() {
                 type="button"
                 onClick={() => switchMode('signup')}
                 className={`flex-1 py-2.5 text-sm font-medium transition-colors ${
-                  mode === 'signup' ? 'bg-sky-500 text-white' : 'bg-white text-gray-600'
+                  mode === 'signup' ? 'bg-gradient-to-b from-sky-400 to-sky-600 text-white' : 'bg-white text-gray-600'
                 }`}
               >
                 Create account
@@ -268,7 +268,7 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-sky-500 text-white font-semibold py-3 rounded-xl disabled:opacity-50 transition-colors"
+                className="w-full bg-gradient-to-b from-sky-400 to-sky-600 text-white font-semibold py-3 rounded-xl disabled:opacity-50 transition-colors shadow-sky-sm"
               >
                 {loading
                   ? mode === 'signin' ? 'Signing in…' : 'Creating account…'

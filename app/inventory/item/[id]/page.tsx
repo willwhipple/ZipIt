@@ -124,18 +124,11 @@ export default function EditItemPage() {
   return (
     <div className="flex flex-col min-h-full">
       {/* Header */}
-      <div className="flex items-center gap-3 px-4 pt-12 pb-4 border-b border-gray-100 bg-sky-50">
-        <button onClick={() => router.back()} className="text-sky-500 text-sm font-medium">
-          ← Back
+      <div className="header-noise flex items-center gap-3 px-4 pt-12 pb-4 bg-gradient-to-b from-sky-50 to-white">
+        <button onClick={() => router.back()} aria-label="Back" className="text-sky-500 -ml-1">
+          <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" /></svg>
         </button>
         <h1 className="text-lg font-semibold font-logo text-sky-500 flex-1">Edit Item</h1>
-        <button
-          onClick={handleSave}
-          disabled={saving}
-          className="text-sky-500 text-sm font-semibold disabled:opacity-40"
-        >
-          {saving ? 'Saving…' : 'Save'}
-        </button>
       </div>
 
       <div className="flex flex-col gap-5 px-4 py-5">
@@ -160,7 +153,7 @@ export default function EditItemPage() {
                 onClick={() => setCategory(cat)}
                 className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${
                   category === cat
-                    ? 'bg-sky-500 text-white border-sky-500'
+                    ? 'bg-sky-500 text-white border-sky-500 shadow-sky-sm'
                     : 'bg-white text-gray-600 border-gray-300'
                 }`}
               >
@@ -234,7 +227,7 @@ export default function EditItemPage() {
                     onClick={() => toggleActivity(a.id)}
                     className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${
                       selected
-                        ? 'bg-sky-500 text-white border-sky-500'
+                        ? 'bg-sky-500 text-white border-sky-500 shadow-sky-sm'
                         : 'bg-white text-gray-600 border-gray-300'
                     }`}
                   >
@@ -260,7 +253,7 @@ export default function EditItemPage() {
                   <button
                     onClick={addActivity}
                     disabled={addingActivity}
-                    className="px-3 py-2 bg-sky-500 text-white text-sm font-medium rounded-xl disabled:opacity-40"
+                    className="px-3 py-2 bg-gradient-to-b from-sky-400 to-sky-600 text-white text-sm font-medium rounded-xl disabled:opacity-40 shadow-sky-sm"
                   >
                     {addingActivity ? 'Adding…' : 'Add'}
                   </button>
@@ -292,6 +285,15 @@ export default function EditItemPage() {
             <p className="text-sm text-red-600">{error}</p>
           </div>
         )}
+
+        {/* Save button */}
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className="w-full bg-gradient-to-b from-sky-400 to-sky-600 text-white font-semibold py-4 rounded-xl disabled:opacity-50 shadow-sky mt-2"
+        >
+          {saving ? 'Saving…' : 'Save Item'}
+        </button>
       </div>
     </div>
   );

@@ -52,14 +52,14 @@ export default function HomePage() {
   return (
     <div className="flex flex-col min-h-full">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 pt-12 pb-4 bg-sky-50">
+      <div className="header-noise flex items-center justify-between px-4 pt-12 pb-4 bg-gradient-to-b from-sky-50 to-white">
         <div className="flex items-center gap-2">
           <button
             onClick={() => router.push('/settings')}
             aria-label="Settings"
-            className="w-10 h-10 flex items-center justify-center rounded-full border-2 border-sky-200 text-sky-400 hover:border-sky-400 hover:text-sky-500 transition-colors"
+            className="w-10 h-10 flex items-center justify-center rounded-full border border-sky-200 text-sky-400 hover:border-sky-400 hover:text-sky-500 transition-colors bg-white/60"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="12" cy="8" r="4" />
               <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
             </svg>
@@ -68,7 +68,7 @@ export default function HomePage() {
         </div>
         <button
           onClick={() => router.push('/trip/create')}
-          className="bg-sky-500 text-white text-sm font-semibold px-4 py-2 rounded-full"
+          className="bg-gradient-to-b from-sky-400 to-sky-600 text-white text-sm font-semibold px-4 py-2 rounded-full shadow-sky-sm"
         >
           + New Trip
         </button>
@@ -84,7 +84,7 @@ export default function HomePage() {
           </p>
           <button
             onClick={() => router.push('/trip/create')}
-            className="mt-2 bg-sky-500 text-white font-semibold px-6 py-3 rounded-xl"
+            className="mt-2 bg-gradient-to-b from-sky-400 to-sky-600 text-white font-semibold px-6 py-3 rounded-xl shadow-sky-sm"
           >
             Create Your First Trip
           </button>
@@ -106,7 +106,7 @@ export default function HomePage() {
               <button
                 key={trip.id}
                 onClick={() => router.push(`/trip/${trip.id}`)}
-                className="w-full text-left bg-white rounded-2xl border border-gray-200 p-4 shadow-sm"
+                className="w-full text-left bg-white rounded-2xl ring-1 ring-sky-100/60 p-4 shadow-sky"
               >
                 <div className="flex items-start justify-between mb-3">
                   <div>
@@ -115,18 +115,18 @@ export default function HomePage() {
                       {formatDate(trip.start_date)} — {formatDate(trip.end_date)}
                     </p>
                   </div>
-                  <span className="text-sky-500 text-xl">›</span>
+                  <span className="text-sky-400 text-xl">›</span>
                 </div>
 
                 {/* Progress bar */}
                 <div className="flex items-center gap-2">
-                  <div className="flex-1 bg-gray-100 rounded-full h-2">
+                  <div className="flex-1 bg-gray-100 rounded-full h-1.5">
                     <div
-                      className="bg-sky-500 h-2 rounded-full transition-all"
+                      className="bg-gradient-to-r from-sky-400 to-sky-500 h-1.5 rounded-full transition-all"
                       style={{ width: `${progress}%` }}
                     />
                   </div>
-                  <span className="text-xs text-gray-500 whitespace-nowrap">
+                  <span className="text-xs text-gray-400 whitespace-nowrap">
                     {packed} / {total} packed
                   </span>
                 </div>

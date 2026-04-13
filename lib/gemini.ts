@@ -1,5 +1,5 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import type { Trip, Activity, CategoryType, QuantityType, AiSuggestion, InventorySuggestion, ParsedTripDescription, AccommodationType } from '../types';
+import type { Trip, Activity, CategoryType, QuantityType, AiSuggestion, InventorySuggestion, ParsedTripDescription } from '../types';
 
 // Re-export AI types so callers can import from one place.
 export type { AiSuggestion, InventorySuggestion, ParsedTripDescription };
@@ -36,7 +36,7 @@ function getModel() {
  * weather is optional — if provided it's included as a context line.
  */
 export function buildTripContext(
-  trip: Pick<Trip, 'name' | 'start_date' | 'end_date' | 'accommodation_type' | 'carry_on_only' | 'laundry_available'>,
+  trip: Pick<Trip, 'name' | 'start_date' | 'end_date' | 'carry_on_only' | 'laundry_available'>,
   activities: Activity[],
   weather?: string
 ): string {
@@ -48,7 +48,6 @@ export function buildTripContext(
     `Trip: ${trip.name}`,
     `Dates: ${trip.start_date} to ${trip.end_date} (${nightLabel})`,
     `Activities: ${activityNames}`,
-    `Accommodation: ${trip.accommodation_type}`,
     `Carry-on only: ${trip.carry_on_only ? 'Yes' : 'No'}`,
     `Laundry available: ${trip.laundry_available ? 'Yes' : 'No'}`,
   ];
@@ -104,10 +103,6 @@ const VALID_CATEGORIES = new Set<string>([
 ]);
 
 const VALID_QUANTITY_TYPES = new Set<string>(['fixed', 'per_night', 'per_activity']);
-
-const VALID_ACCOMMODATION_TYPES = new Set<string>([
-  'Hotel', 'Airbnb', 'Camping', 'Staying with someone', 'Other',
-]);
 
 /**
  * Strips optional markdown code fences from a raw AI response.
@@ -219,9 +214,6 @@ export function parseTripDescription(raw: string): ParsedTripDescription {
   if (Array.isArray(obj.activities)) {
     const names = obj.activities.filter((a): a is string => typeof a === 'string' && a.trim() !== '');
     if (names.length > 0) result.activities = names;
-  }
-  if (typeof obj.accommodationType === 'string' && VALID_ACCOMMODATION_TYPES.has(obj.accommodationType)) {
-    result.accommodationType = obj.accommodationType as AccommodationType;
   }
   if (typeof obj.carryOnOnly === 'boolean') result.carryOnOnly = obj.carryOnOnly;
   if (typeof obj.laundryAvailable === 'boolean') result.laundryAvailable = obj.laundryAvailable;

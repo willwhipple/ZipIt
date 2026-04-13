@@ -76,9 +76,9 @@ export default function SettingsPage() {
   return (
     <div className="flex flex-col min-h-full">
       {/* Header */}
-      <div className="flex items-center gap-3 px-4 pt-12 pb-4 border-b border-gray-100 bg-sky-50">
-        <button onClick={() => router.back()} className="text-sky-500 text-sm font-medium">
-          ← Back
+      <div className="header-noise flex items-center gap-3 px-4 pt-12 pb-4 bg-gradient-to-b from-sky-50 to-white">
+        <button onClick={() => router.back()} aria-label="Back" className="text-sky-500 -ml-1">
+          <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" /></svg>
         </button>
         <h1 className="text-xl font-bold font-logo text-sky-500 flex-1">Settings</h1>
       </div>
@@ -96,7 +96,7 @@ export default function SettingsPage() {
                 onClick={() => setTempUnit(unit)}
                 className={`flex-1 py-2.5 text-sm font-medium transition-colors ${
                   tempUnit === unit
-                    ? 'bg-sky-500 text-white'
+                    ? 'bg-gradient-to-b from-sky-400 to-sky-600 text-white'
                     : 'bg-white text-gray-600'
                 }`}
               >
@@ -119,7 +119,7 @@ export default function SettingsPage() {
                 onClick={() => setLaundryStyle(option.value)}
                 className={`flex items-center gap-3 px-4 py-3 rounded-xl border text-left transition-colors ${
                   laundryStyle === option.value
-                    ? 'border-sky-500 bg-sky-50'
+                    ? 'border-sky-400 bg-sky-50 ring-1 ring-sky-300'
                     : 'border-gray-200 bg-white'
                 }`}
               >
@@ -163,7 +163,7 @@ export default function SettingsPage() {
         <button
           onClick={handleSave}
           disabled={saving}
-          className="w-full bg-sky-500 text-white font-semibold py-3 rounded-xl disabled:opacity-50 transition-colors"
+          className="w-full bg-gradient-to-b from-sky-400 to-sky-600 text-white font-semibold py-3 rounded-xl disabled:opacity-50 transition-colors shadow-sky-sm"
         >
           {saved ? 'Saved!' : saving ? 'Saving…' : 'Save Preferences'}
         </button>

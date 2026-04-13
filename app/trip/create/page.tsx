@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { generatePackingList } from '@/lib/generation';
-import type { Activity, AccommodationType, ParsedTripDescription } from '@/types';
+import type { Activity, ParsedTripDescription } from '@/types';
 import LuggageSpinner from '@/components/LuggageSpinner';
 
 // Adds `days` to a YYYY-MM-DD string, returns YYYY-MM-DD.
@@ -14,14 +14,6 @@ function addDays(dateStr: string, days: number): string {
   d.setDate(d.getDate() + days);
   return d.toISOString().split('T')[0];
 }
-
-const ACCOMMODATION_TYPES: AccommodationType[] = [
-  'Hotel',
-  'Airbnb',
-  'Camping',
-  'Staying with someone',
-  'Other',
-];
 
 export default function CreateTripPage() {
   const router = useRouter();
@@ -33,7 +25,6 @@ export default function CreateTripPage() {
   const [endDate, setEndDate] = useState('');
   const [nights, setNights] = useState('');
   const [endDateMode, setEndDateMode] = useState<'nights' | 'manual'>('nights');
-  const [accommodation, setAccommodation] = useState<AccommodationType>('Hotel');
   const [carryOnOnly, setCarryOnOnly] = useState(false);
   const [laundryAvailable, setLaundryAvailable] = useState(false);
   const [selectedActivityIds, setSelectedActivityIds] = useState<string[]>([]);
@@ -93,7 +84,6 @@ export default function CreateTripPage() {
         setEndDate(parsed.endDate);
         setEndDateMode('manual');
       }
-      if (parsed.accommodationType) setAccommodation(parsed.accommodationType);
       if (typeof parsed.carryOnOnly === 'boolean') setCarryOnOnly(parsed.carryOnOnly);
       if (typeof parsed.laundryAvailable === 'boolean') setLaundryAvailable(parsed.laundryAvailable);
 
@@ -152,7 +142,6 @@ export default function CreateTripPage() {
         destination: destination.trim() || null,
         start_date: startDate,
         end_date: finalEndDate,
-        accommodation_type: accommodation,
         carry_on_only: carryOnOnly,
         laundry_available: laundryAvailable,
       })
@@ -192,16 +181,16 @@ export default function CreateTripPage() {
   return (
     <div className="flex flex-col min-h-full">
       {/* Header */}
-      <div className="flex items-center gap-3 px-4 pt-12 pb-4 border-b border-gray-100 bg-sky-50">
-        <button onClick={() => router.back()} className="text-sky-500 text-sm font-medium">
-          ← Back
+      <div className="header-noise flex items-center gap-3 px-4 pt-12 pb-4 bg-gradient-to-b from-sky-50 to-white">
+        <button onClick={() => router.back()} aria-label="Back" className="text-sky-500 -ml-1">
+          <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" /></svg>
         </button>
         <h1 className="text-lg font-semibold font-logo text-sky-500 flex-1">New Trip</h1>
       </div>
 
       <div className="flex flex-col gap-5 px-4 py-5">
         {/* Smart Suggestions — natural language description */}
-        <div className="bg-teal-50 rounded-2xl p-4">
+        <div className="bg-gradient-to-br from-teal-50 to-white rounded-2xl p-4 ring-1 ring-teal-100">
           <p className="text-sm font-medium text-teal-700 mb-2">✦ Describe your trip</p>
           {nlDone ? (
             <div className="flex items-center justify-between">
@@ -226,7 +215,7 @@ export default function CreateTripPage() {
               <button
                 onClick={handleNLParse}
                 disabled={nlParsing || !nlDescription.trim()}
-                className="mt-2 w-full bg-teal-400 text-white text-sm font-semibold py-2.5 rounded-xl disabled:opacity-50"
+                className="mt-2 w-full bg-gradient-to-b from-teal-400 to-teal-500 text-white text-sm font-semibold py-2.5 rounded-xl disabled:opacity-50 shadow-teal"
               >
                 {nlParsing ? 'Filling form…' : 'Fill form from description'}
               </button>
@@ -330,7 +319,7 @@ export default function CreateTripPage() {
                   onClick={() => toggleActivity(a.id)}
                   className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${
                     selected
-                      ? 'bg-sky-500 text-white border-sky-500'
+                      ? 'bg-sky-500 text-white border-sky-500 shadow-sky-sm'
                       : 'bg-white text-gray-600 border-gray-300'
                   }`}
                 >
@@ -338,27 +327,6 @@ export default function CreateTripPage() {
                 </button>
               );
             })}
-          </div>
-        </div>
-
-        {/* Accommodation */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Accommodation</label>
-          <div className="flex flex-col gap-2">
-            {ACCOMMODATION_TYPES.map((type) => (
-              <button
-                key={type}
-                onClick={() => setAccommodation(type)}
-                className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border text-sm text-left ${
-                  accommodation === type
-                    ? 'border-sky-500 bg-sky-50 text-sky-700'
-                    : 'border-gray-200 text-gray-700'
-                }`}
-              >
-                {accommodation === type && <span className="text-sky-500">✓</span>}
-                {type}
-              </button>
-            ))}
           </div>
         </div>
 
@@ -407,7 +375,7 @@ export default function CreateTripPage() {
         <button
           onClick={handleSubmit}
           disabled={loading}
-          className="w-full bg-sky-500 text-white font-semibold py-4 rounded-xl mt-2 disabled:opacity-50"
+          className="w-full bg-gradient-to-b from-sky-400 to-sky-600 text-white font-semibold py-4 rounded-xl mt-2 disabled:opacity-50 shadow-sky"
         >
           Generate Packing List
         </button>

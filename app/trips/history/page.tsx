@@ -72,10 +72,10 @@ export default function TripHistoryPage() {
   return (
     <div className="flex flex-col min-h-full">
       {/* Header */}
-      <div className="px-4 pt-12 pb-4 border-b border-gray-100 bg-sky-50">
+      <div className="header-noise px-4 pt-12 pb-4 bg-gradient-to-b from-sky-50 to-white">
         <div className="flex items-center gap-3 mb-3">
-          <button onClick={() => router.back()} className="text-sky-500 text-sm font-medium">
-            ← Back
+          <button onClick={() => router.back()} aria-label="Back" className="text-sky-500 -ml-1">
+            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" /></svg>
           </button>
         </div>
         <h1 className="text-2xl font-bold font-logo text-sky-500">Past Trips</h1>

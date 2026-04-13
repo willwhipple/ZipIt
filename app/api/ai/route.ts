@@ -122,7 +122,7 @@ async function handleSuggestItems(req: SuggestItemsRequest) {
   const supabase = await createClient();
   const { data: trip, error: tripError } = await supabase
     .from('trips')
-    .select('id, name, start_date, end_date, accommodation_type, carry_on_only, laundry_available')
+    .select('id, name, start_date, end_date, carry_on_only, laundry_available')
     .eq('id', req.tripId)
     .single();
 
@@ -191,7 +191,6 @@ Return ONLY a JSON object with these fields:
   "startDate": string,         // YYYY-MM-DD format
   "endDate": string,           // YYYY-MM-DD format
   "activities": string[],      // only from: Golf, Beach, Business, Hiking, Formal Dinner, Casual, Ski, City Sightseeing
-  "accommodationType": string, // one of: Hotel, Airbnb, Camping, Staying with someone, Other
   "carryOnOnly": boolean,
   "laundryAvailable": boolean
 }
