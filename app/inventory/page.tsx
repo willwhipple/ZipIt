@@ -244,7 +244,7 @@ export default function InventoryPage() {
               onClick={() => { setShowAIPrefill(true); setExtraContext(''); setInventorySuggestions([]); setAiPrefillError(''); setEditingSuggestion(null); }}
               aria-label="Smart suggestions"
             >
-              <span style={{ fontSize: 16 }}>✦</span>
+              <span style={{ fontSize: 16, color: 'var(--zi-smart)' }}>✦</span>
             </HeaderIconBtn>
             <HeaderIconBtn onClick={() => router.push('/inventory/item/create')} label="Add item">
               <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
