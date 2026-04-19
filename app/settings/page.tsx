@@ -5,6 +5,10 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import type { LaundryStyle, TemperatureUnit, UserPreferences } from '@/types';
 import LuggageSpinner from '@/components/LuggageSpinner';
+import { PageHeader, HeaderIconBtn } from '@/components/ui/PageHeader';
+import { Textarea } from '@/components/ui/Input';
+import { FilterSegment } from '@/components/ui/FilterSegment';
+import { PrimaryBtn, DangerBtn } from '@/components/ui/Button';
 
 const LAUNDRY_OPTIONS: { value: LaundryStyle; label: string; description: string }[] = [
   { value: 'frequent', label: 'Frequent', description: 'I wash clothes often — pack lean' },
@@ -75,41 +79,37 @@ export default function SettingsPage() {
 
   return (
     <div className="flex flex-col min-h-full">
-      {/* Header */}
-      <div className="header-noise flex items-center gap-3 px-4 pt-12 pb-4 bg-gradient-to-b from-sky-50 to-white">
-        <button onClick={() => router.back()} aria-label="Back" className="text-sky-500 -ml-1">
-          <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" /></svg>
-        </button>
-        <h1 className="text-xl font-bold font-logo text-sky-500 flex-1">Settings</h1>
-      </div>
+      <PageHeader
+        leading={
+          <HeaderIconBtn onClick={() => router.back()} aria-label="Back">
+            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
+            </svg>
+          </HeaderIconBtn>
+        }
+        title="Settings"
+      />
 
       <div className="flex flex-col gap-6 px-4 py-6">
 
         {/* Temperature Unit */}
         <section>
-          <h2 className="text-sm font-semibold text-gray-700 mb-1">Temperature Unit</h2>
-          <p className="text-xs text-gray-400 mb-3">Used when displaying weather on trip pages.</p>
-          <div className="flex rounded-xl overflow-hidden border border-gray-200">
-            {(['celsius', 'fahrenheit'] as TemperatureUnit[]).map((unit) => (
-              <button
-                key={unit}
-                onClick={() => setTempUnit(unit)}
-                className={`flex-1 py-2.5 text-sm font-medium transition-colors ${
-                  tempUnit === unit
-                    ? 'bg-gradient-to-b from-sky-400 to-sky-600 text-white'
-                    : 'bg-white text-gray-600'
-                }`}
-              >
-                {unit === 'celsius' ? '°C — Celsius' : '°F — Fahrenheit'}
-              </button>
-            ))}
-          </div>
+          <p className="text-[13px] font-medium mb-1" style={{ color: 'var(--zi-text)' }}>Temperature unit</p>
+          <p className="text-xs mb-3" style={{ color: 'var(--zi-text-subtle)' }}>Used when displaying weather on trip pages.</p>
+          <FilterSegment
+            options={[
+              { id: 'celsius', label: '°C — Celsius' },
+              { id: 'fahrenheit', label: '°F — Fahrenheit' },
+            ]}
+            value={tempUnit}
+            onChange={(v) => setTempUnit(v as TemperatureUnit)}
+          />
         </section>
 
         {/* Laundry Packing Style */}
         <section>
-          <h2 className="text-sm font-semibold text-gray-700 mb-1">Laundry Packing Style</h2>
-          <p className="text-xs text-gray-400 mb-3">
+          <p className="text-[13px] font-medium mb-1" style={{ color: 'var(--zi-text)' }}>Laundry packing style</p>
+          <p className="text-xs mb-3" style={{ color: 'var(--zi-text-subtle)' }}>
             When laundry is available on a trip, how aggressively should that affect your quantities?
           </p>
           <div className="flex flex-col gap-2">
@@ -117,26 +117,20 @@ export default function SettingsPage() {
               <button
                 key={option.value}
                 onClick={() => setLaundryStyle(option.value)}
-                className={`flex items-center gap-3 px-4 py-3 rounded-xl border text-left transition-colors ${
-                  laundryStyle === option.value
-                    ? 'border-sky-400 bg-sky-50 ring-1 ring-sky-300'
-                    : 'border-gray-200 bg-white'
-                }`}
+                className="flex items-center gap-3 px-4 py-3 text-left"
+                style={{
+                  borderRadius: 'var(--zi-r-lg)',
+                  border: `1px solid ${laundryStyle === option.value ? 'var(--zi-brand)' : 'var(--zi-border-strong)'}`,
+                  background: laundryStyle === option.value ? 'var(--zi-brand-tint)' : 'white',
+                }}
               >
-                <div
-                  className={`w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${
-                    laundryStyle === option.value ? 'border-sky-500' : 'border-gray-300'
-                  }`}
-                >
-                  {laundryStyle === option.value && (
-                    <div className="w-2 h-2 rounded-full bg-sky-500" />
-                  )}
+                <div className="w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center"
+                  style={{ borderColor: laundryStyle === option.value ? 'var(--zi-brand)' : 'var(--zi-border-strong)' }}>
+                  {laundryStyle === option.value && <div className="w-2 h-2 rounded-full" style={{ background: 'var(--zi-brand)' }} />}
                 </div>
                 <div>
-                  <p className={`text-sm font-medium ${laundryStyle === option.value ? 'text-sky-700' : 'text-gray-800'}`}>
-                    {option.label}
-                  </p>
-                  <p className="text-xs text-gray-400">{option.description}</p>
+                  <p className="text-sm font-medium" style={{ color: 'var(--zi-text)' }}>{option.label}</p>
+                  <p className="text-xs" style={{ color: 'var(--zi-text-subtle)' }}>{option.description}</p>
                 </div>
               </button>
             ))}
@@ -145,39 +139,32 @@ export default function SettingsPage() {
 
         {/* About Me */}
         <section>
-          <h2 className="text-sm font-semibold text-gray-700 mb-1">About Me</h2>
-          <p className="text-xs text-gray-400 mb-3">
+          <p className="text-[13px] font-medium mb-1" style={{ color: 'var(--zi-text)' }}>About me</p>
+          <p className="text-xs mb-3" style={{ color: 'var(--zi-text-subtle)' }}>
             Any context about you that improves your Smart Suggestions — travel style,
             preferences, things you always forget.
           </p>
-          <textarea
+          <Textarea
             value={aboutMe}
-            onChange={(e) => setAboutMe(e.target.value)}
+            onChange={setAboutMe}
             placeholder="e.g. I run hot, always overpack shoes, and usually travel for work with one leisure day added on…"
             rows={4}
-            className="w-full border border-gray-200 rounded-xl px-3 py-3 text-sm text-gray-800 placeholder-gray-400 resize-none focus:outline-none focus:ring-2 focus:ring-sky-500"
           />
         </section>
 
-        {/* Save */}
-        <button
-          onClick={handleSave}
-          disabled={saving}
-          className="w-full bg-gradient-to-b from-sky-400 to-sky-600 text-white font-semibold py-3 rounded-xl disabled:opacity-50 transition-colors shadow-sky-sm"
-        >
-          {saved ? 'Saved!' : saving ? 'Saving…' : 'Save Preferences'}
-        </button>
+        <PrimaryBtn onClick={handleSave} disabled={saving} full>
+          {saved ? 'Saved!' : saving ? 'Saving…' : 'Save preferences'}
+        </PrimaryBtn>
 
-        {/* Sign out */}
-        <button
+        <DangerBtn
           onClick={async () => {
             await supabase.auth.signOut();
             router.push('/login');
           }}
-          className="w-full text-sm text-red-400 font-medium py-2 text-center"
+          full
         >
           Sign out
-        </button>
+        </DangerBtn>
       </div>
     </div>
   );

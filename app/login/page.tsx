@@ -4,6 +4,9 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import AppLogo from '@/components/AppLogo';
+import { Input } from '@/components/ui/Input';
+import { PrimaryBtn } from '@/components/ui/Button';
+import { FilterSegment } from '@/components/ui/FilterSegment';
 
 type Mode = 'signin' | 'signup' | 'forgot';
 
@@ -117,15 +120,16 @@ export default function LoginPage() {
       <div className="flex flex-col items-center justify-center min-h-dvh px-6 bg-gradient-to-b from-sky-50 via-white to-white">
         <div className="w-full max-w-sm text-center">
           <div className="text-4xl mb-4">📬</div>
-          <h2 className="text-lg font-semibold text-gray-900 mb-2">Check your email</h2>
-          <p className="text-sm text-gray-500">
+          <h2 className="text-lg font-semibold mb-2" style={{ color: 'var(--zi-text)' }}>Check your email</h2>
+          <p className="text-sm" style={{ color: 'var(--zi-text-muted)' }}>
             We sent a confirmation link to{' '}
-            <span className="font-medium text-gray-800">{email}</span>.
+            <span className="font-medium" style={{ color: 'var(--zi-text)' }}>{email}</span>.
             Tap it to activate your account and sign in.
           </p>
           <button
             onClick={() => { setConfirmSent(false); setEmail(''); setPassword(''); }}
-            className="mt-6 text-sm text-sky-500 font-medium"
+            className="mt-6 text-sm font-medium"
+            style={{ color: 'var(--zi-brand)' }}
           >
             Use a different email
           </button>
@@ -140,15 +144,16 @@ export default function LoginPage() {
       <div className="flex flex-col items-center justify-center min-h-dvh px-6 bg-gradient-to-b from-sky-50 via-white to-white">
         <div className="w-full max-w-sm text-center">
           <div className="text-4xl mb-4">🔑</div>
-          <h2 className="text-lg font-semibold text-gray-900 mb-2">Check your email</h2>
-          <p className="text-sm text-gray-500">
+          <h2 className="text-lg font-semibold mb-2" style={{ color: 'var(--zi-text)' }}>Check your email</h2>
+          <p className="text-sm" style={{ color: 'var(--zi-text-muted)' }}>
             We sent a password reset link to{' '}
-            <span className="font-medium text-gray-800">{email}</span>.
+            <span className="font-medium" style={{ color: 'var(--zi-text)' }}>{email}</span>.
             Tap it to set a new password.
           </p>
           <button
             onClick={() => { setResetSent(false); switchMode('signin'); }}
-            className="mt-6 text-sm text-sky-500 font-medium"
+            className="mt-6 text-sm font-medium"
+            style={{ color: 'var(--zi-brand)' }}
           >
             Back to sign in
           </button>
@@ -165,46 +170,38 @@ export default function LoginPage() {
           <h1 className="flex justify-center mb-2">
             <AppLogo size="lg" colorScheme="brand" />
           </h1>
-          <p className="text-sm text-gray-500 mt-1">Your personal packing list</p>
+          <p className="text-sm mt-1" style={{ color: 'var(--zi-text-muted)' }}>Your personal packing list</p>
         </div>
 
         {mode === 'forgot' ? (
           <>
-            <h2 className="text-base font-semibold text-gray-800 mb-1">Reset your password</h2>
-            <p className="text-sm text-gray-500 mb-6">
+            <h2 className="text-base font-semibold mb-1" style={{ color: 'var(--zi-text)' }}>Reset your password</h2>
+            <p className="text-sm mb-6" style={{ color: 'var(--zi-text-muted)' }}>
               Enter your email and we&apos;ll send you a link to set a new password.
             </p>
 
             <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Email address
-                </label>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="you@example.com"
-                  autoFocus
-                  autoComplete="email"
-                  className="w-full border border-gray-300 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
-                />
-              </div>
+              <Input
+                label="Email address"
+                type="email"
+                value={email}
+                onChange={setEmail}
+                placeholder="you@example.com"
+                autoFocus
+                autoComplete="email"
+              />
 
-              {error && <p className="text-xs text-red-500">{error}</p>}
+              {error && <p className="text-xs" style={{ color: 'var(--zi-danger)' }}>{error}</p>}
 
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full bg-gradient-to-b from-sky-400 to-sky-600 text-white font-semibold py-3 rounded-xl disabled:opacity-50 transition-colors shadow-sky-sm"
-              >
+              <PrimaryBtn type="submit" disabled={loading} full>
                 {loading ? 'Sending…' : 'Send reset link'}
-              </button>
+              </PrimaryBtn>
             </form>
 
             <button
               onClick={() => switchMode('signin')}
-              className="mt-5 w-full text-sm text-center text-sky-500 font-medium"
+              className="mt-5 w-full text-sm text-center font-medium"
+              style={{ color: 'var(--zi-brand)' }}
             >
               Back to sign in
             </button>
@@ -212,75 +209,53 @@ export default function LoginPage() {
         ) : (
           <>
             {/* Mode toggle */}
-            <div className="flex rounded-xl overflow-hidden border border-gray-200 mb-6">
-              <button
-                type="button"
-                onClick={() => switchMode('signin')}
-                className={`flex-1 py-2.5 text-sm font-medium transition-colors ${
-                  mode === 'signin' ? 'bg-gradient-to-b from-sky-400 to-sky-600 text-white' : 'bg-white text-gray-600'
-                }`}
-              >
-                Sign in
-              </button>
-              <button
-                type="button"
-                onClick={() => switchMode('signup')}
-                className={`flex-1 py-2.5 text-sm font-medium transition-colors ${
-                  mode === 'signup' ? 'bg-gradient-to-b from-sky-400 to-sky-600 text-white' : 'bg-white text-gray-600'
-                }`}
-              >
-                Create account
-              </button>
+            <div className="mb-6">
+              <FilterSegment
+                options={[
+                  { id: 'signin', label: 'Sign in' },
+                  { id: 'signup', label: 'Create account' },
+                ]}
+                value={mode}
+                onChange={(v) => switchMode(v as Mode)}
+                full
+              />
             </div>
 
             <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Email address
-                </label>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="you@example.com"
-                  autoFocus
-                  autoComplete="email"
-                  className="w-full border border-gray-300 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
-                />
-              </div>
+              <Input
+                label="Email address"
+                type="email"
+                value={email}
+                onChange={setEmail}
+                placeholder="you@example.com"
+                autoFocus
+                autoComplete="email"
+              />
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Password
-                </label>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder={mode === 'signup' ? 'At least 6 characters' : ''}
-                  autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
-                  className="w-full border border-gray-300 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
-                />
-              </div>
+              <Input
+                label="Password"
+                type="password"
+                value={password}
+                onChange={setPassword}
+                placeholder={mode === 'signup' ? 'At least 6 characters' : ''}
+                autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
+              />
 
-              {error && <p className="text-xs text-red-500">{error}</p>}
+              {error && <p className="text-xs" style={{ color: 'var(--zi-danger)' }}>{error}</p>}
 
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full bg-gradient-to-b from-sky-400 to-sky-600 text-white font-semibold py-3 rounded-xl disabled:opacity-50 transition-colors shadow-sky-sm"
-              >
+              <PrimaryBtn type="submit" disabled={loading} full>
                 {loading
                   ? mode === 'signin' ? 'Signing in…' : 'Creating account…'
                   : mode === 'signin' ? 'Sign in' : 'Create account'
                 }
-              </button>
+              </PrimaryBtn>
 
               {mode === 'signin' && (
                 <button
                   type="button"
                   onClick={() => switchMode('forgot')}
-                  className="text-sm text-center text-sky-500 font-medium"
+                  className="text-sm text-center font-medium"
+                  style={{ color: 'var(--zi-brand)' }}
                 >
                   Forgot password?
                 </button>

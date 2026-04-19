@@ -1,9 +1,12 @@
+import React from 'react';
+
 interface Props {
   size?: number;
   className?: string;
+  style?: React.CSSProperties;
 }
 
-export default function SuitcaseIcon({ size, className = '' }: Props) {
+export default function SuitcaseIcon({ size, className = '', style }: Props) {
   return (
     <svg
       width={size}
@@ -15,6 +18,7 @@ export default function SuitcaseIcon({ size, className = '' }: Props) {
       strokeLinecap="round"
       strokeLinejoin="round"
       className={className}
+      style={style}
     >
       {/* Handle */}
       <path d="M8 8V6a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />

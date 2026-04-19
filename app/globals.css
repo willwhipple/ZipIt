@@ -2,6 +2,100 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ─── Zip It v2 Design Tokens ─────────────────────────────── */
+:root {
+  /* Brand */
+  --zi-brand:        #0ea5e9;
+  --zi-brand-hi:     #38bdf8;
+  --zi-brand-lo:     #0284c7;
+  --zi-brand-deep:   #0369a1;
+  --zi-brand-tint:   #f0f9ff;
+
+  /* Smart / AI */
+  --zi-smart:        #2dd4bf;
+  --zi-smart-hi:     #5eead4;
+  --zi-smart-lo:     #14b8a6;
+  --zi-smart-deep:   #0f766e;
+  --zi-smart-tint:   #f0fdfa;
+
+  /* Neutrals */
+  --zi-bg:           #fbfbfa;
+  --zi-surface:      #ffffff;
+  --zi-text:         #111111;
+  --zi-text-muted:   #6b6b6b;
+  --zi-text-subtle:  #a8a8a8;
+  --zi-border:       #ebebea;
+  --zi-border-strong:#d4d4d3;
+  --zi-overlay-scrim:rgba(0,0,0,.5);
+
+  /* Semantic */
+  --zi-danger:       #ef4444;
+  --zi-danger-tint:  #fef2f2;
+  --zi-success:      #059669;
+  --zi-warn:         #d97706;
+
+  /* Radii */
+  --zi-r-sm:   6px;
+  --zi-r-md:   8px;
+  --zi-r-lg:  10px;
+  --zi-r-xl:  12px;
+  --zi-r-2xl: 14px;
+  --zi-r-pill: 999px;
+
+  /* Spacing (4px grid) */
+  --zi-s-1: 4px;
+  --zi-s-2: 8px;
+  --zi-s-3: 12px;
+  --zi-s-4: 16px;
+  --zi-s-5: 20px;
+  --zi-s-6: 24px;
+  --zi-s-8: 32px;
+
+  /* Elevation */
+  --zi-elev-row:  0 1px 2px rgba(0,0,0,.04);
+  --zi-elev-card: 0 1px 2px rgba(0,0,0,.06);
+  --zi-elev-fab:  0 8px 20px -6px rgba(14,165,233,.45);
+  --zi-elev-ai:   0 6px 18px -8px rgba(45,212,191,.35);
+  --zi-elev-pop:  0 20px 40px -12px rgba(0,0,0,.25);
+
+  /* Type */
+  --zi-font-ui:   -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  --zi-font-mono: ui-monospace, "SF Mono", Menlo, monospace;
+  --zi-font-logo: 'Boldonse', system-ui, sans-serif;
+
+  --zi-t-10: 10px;
+  --zi-t-11: 11px;
+  --zi-t-12: 12px;
+  --zi-t-13: 13px;
+  --zi-t-14: 14px;
+  --zi-t-16: 16px;
+  --zi-t-18: 18px;
+  --zi-t-20: 20px;
+  --zi-t-24: 24px;
+  --zi-t-32: 32px;
+
+  --zi-track-tight: -0.4px;
+  --zi-track-snug:  -0.2px;
+  --zi-track-body:  -0.1px;
+
+  /* Motion */
+  --zi-dur-fast: 120ms;
+  --zi-dur-base: 200ms;
+  --zi-ease: cubic-bezier(.2, 0, 0, 1);
+}
+
+/* ─── Gradient helpers ──────────────────────────────────── */
+.zi-grad-brand        { background: linear-gradient(to bottom, var(--zi-brand-hi), var(--zi-brand-lo)); }
+.zi-grad-smart-quiet  { background: linear-gradient(135deg, rgba(94,234,212,.13), rgba(45,212,191,.10)); }
+.zi-grad-smart-rich   { background: radial-gradient(circle at 20% 0%, var(--zi-smart-hi) 0%, var(--zi-smart) 45%, var(--zi-smart-deep) 100%); color: #fff; }
+
+/* ─── Header ─────────────────────────────────────────────── */
+/* Navy→sky gradient used on all page headers */
+.zi-header {
+  background: linear-gradient(165deg, var(--zi-brand-deep) 0%, var(--zi-brand) 100%);
+  color: #fff;
+}
+
 @keyframes luggage-bob {
   0%, 100% { transform: translateY(0px); }
   50% { transform: translateY(-10px); }

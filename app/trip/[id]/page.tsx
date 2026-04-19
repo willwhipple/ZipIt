@@ -6,6 +6,15 @@ import { createClient } from '@/lib/supabase/client';
 import type { Trip, PackingListEntry, Item, CategoryType, QuantityType, AiSuggestion, TemperatureUnit, Activity } from '@/types';
 import LuggageSpinner from '@/components/LuggageSpinner';
 import SuitcaseIcon from '@/components/SuitcaseIcon';
+import { PageHeader, MetaChip, HeaderIconBtn } from '@/components/ui/PageHeader';
+import { FilterSegment } from '@/components/ui/FilterSegment';
+import { SmartCTA } from '@/components/ui/SmartCTA';
+import { PackCheck } from '@/components/ui/PackCheck';
+import { CategoryHeader, ListRow } from '@/components/ui/ListRow';
+import { PrimaryBtn, SecondaryBtn, DangerBtn } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
+import { Chip } from '@/components/ui/Chip';
+import { Toggle } from '@/components/ui/Toggle';
 
 type EntryWithItem = PackingListEntry & { items: Item };
 
@@ -221,6 +230,9 @@ export default function PackingListPage() {
   const [suggestionsLoading, setSuggestionsLoading] = useState(false);
   const [suggestionsError, setSuggestionsError] = useState('');
   const [addingSuggestion, setAddingSuggestion] = useState<string | null>(null);
+
+  // Filter segment
+  const [filter, setFilter] = useState<'all' | 'unpacked' | 'packed'>('all');
 
   useEffect(() => {
     fetchData();
@@ -563,59 +575,75 @@ export default function PackingListPage() {
 
   const total = entries.length;
   const packed = entries.filter((e) => e.packed).length;
+  const unpacked = total - packed;
   const progress = total > 0 ? Math.round((packed / total) * 100) : 0;
+
+  const filteredEntries = entries.filter((e) => {
+    if (filter === 'packed') return e.packed;
+    if (filter === 'unpacked') return !e.packed;
+    return true;
+  });
 
   const grouped = CATEGORY_ORDER.map((category) => ({
     category,
-    entries: entries.filter((e) => e.items.category === category),
+    entries: filteredEntries.filter((e) => e.items.category === category),
   })).filter((g) => g.entries.length > 0);
 
   return (
     <div className="flex flex-col min-h-full">
       {/* Header */}
-      <div className="header-noise px-4 pt-12 pb-4 bg-gradient-to-b from-sky-50 to-white">
-        {/* Row: back | trip name (flex-1) | edit icon | archive icon/badge */}
-        <div className="flex items-center gap-3 mb-2">
-          <button onClick={() => router.back()} aria-label="Back" className="text-sky-500 -ml-1 flex-shrink-0">
-            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" /></svg>
-          </button>
-          <h1 className="flex-1 text-lg font-semibold font-logo text-sky-500 leading-snug">{trip.name}</h1>
-          <div className="flex items-center gap-3 flex-shrink-0">
-            {readOnly ? (
-              <span className="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded-full">Archived</span>
-            ) : (
-              <>
-                <button onClick={openEditTrip} aria-label="Edit trip" className="text-gray-400 hover:text-gray-600 transition-colors">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
-                </button>
-                <button onClick={() => setShowArchiveConfirm(true)} aria-label="Archive trip" className="text-gray-400 hover:text-gray-600 transition-colors">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M5 8h14M5 8a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v0a2 2 0 01-2 2M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" /></svg>
-                </button>
-              </>
-            )}
-          </div>
-        </div>
-
-        {/* Dates + destination */}
-        <div className="flex flex-wrap items-center gap-x-1.5 mt-1">
-          <p className="text-sm text-gray-500">
-            {formatDate(trip.start_date)} — {formatDate(trip.end_date)}
-          </p>
-          {trip.destination && (
+      <PageHeader
+        leading={
+          <HeaderIconBtn onClick={() => router.back()} aria-label="Back">
+            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
+            </svg>
+          </HeaderIconBtn>
+        }
+        trailing={
+          readOnly ? (
+            <span
+              className="text-xs font-medium px-2 py-1 rounded-full"
+              style={{ background: 'rgba(255,255,255,.15)', color: 'rgba(255,255,255,.8)' }}
+            >
+              Archived
+            </span>
+          ) : (
             <>
-              <span className="text-gray-300">·</span>
-              <p className="text-sm text-gray-500">{trip.destination}</p>
+              <HeaderIconBtn onClick={openEditTrip} aria-label="Edit trip">
+                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                </svg>
+              </HeaderIconBtn>
+              <HeaderIconBtn onClick={() => setShowArchiveConfirm(true)} aria-label="Archive trip">
+                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v0a2 2 0 01-2 2M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+                </svg>
+              </HeaderIconBtn>
             </>
-          )}
-        </div>
-
-        {/* Weather — inline below dates */}
-        {weatherLoading && !weather && (
-          <p className="text-xs text-gray-400 mt-1">Loading weather…</p>
-        )}
-        {weather && (
-          <p className="text-xs text-gray-400 mt-1">
-            {(() => {
+          )
+        }
+        eyebrow={
+          <span style={{ fontFamily: 'var(--zi-font-mono)', fontVariantNumeric: 'tabular-nums' }}>
+            {packed} / {total} packed
+          </span>
+        }
+        title={trip.name}
+        chips={
+          <>
+            <MetaChip>
+              {formatDate(trip.start_date)} — {formatDate(trip.end_date)}
+            </MetaChip>
+            {trip.destination && (
+              <MetaChip>
+                <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                {trip.destination}
+              </MetaChip>
+            )}
+            {weather && (() => {
               const unit = tempUnit === 'fahrenheit' ? '°F' : '°C';
               const lo = tempUnit === 'fahrenheit' ? cToF(weather.low) : weather.low;
               const hi = tempUnit === 'fahrenheit' ? cToF(weather.high) : weather.high;
@@ -623,256 +651,222 @@ export default function PackingListPage() {
                 ? (tempUnit === 'fahrenheit' ? Math.round(weather.windKph * 0.621371) : weather.windKph)
                 : null;
               const windUnit = tempUnit === 'fahrenheit' ? 'mph' : 'km/h';
-
               const parts: string[] = [`${weather.emoji} ${lo}–${hi}${unit}`];
-              if (!weather.isClimatology && weather.precipProbability != null) {
-                parts.push(`${weather.precipProbability}% chance of rain`);
-              } else if (weather.isClimatology && weather.precipMm != null) {
-                parts.push(`~${weather.precipMm}mm rain`);
-              }
-              if (windSpeed != null) parts.push(`Winds up to ${windSpeed} ${windUnit}`);
-
-              const label = weather.isClimatology ? 'Usually' : 'Forecast';
-              return `${label}: ${parts.join(' · ')}`;
+              if (!weather.isClimatology && weather.precipProbability != null) parts.push(`${weather.precipProbability}% rain`);
+              else if (weather.isClimatology && weather.precipMm != null) parts.push(`~${weather.precipMm}mm`);
+              if (windSpeed != null) parts.push(`${windSpeed} ${windUnit}`);
+              return <MetaChip>{parts.join(' · ')}</MetaChip>;
             })()}
-          </p>
-        )}
+          </>
+        }
+      />
 
-        {/* Progress */}
-        <div className="flex items-center gap-2 mt-3">
-          <div className="flex-1 bg-gray-100 rounded-full h-1.5">
-            <div
-              className="bg-gradient-to-r from-sky-400 to-sky-500 h-1.5 rounded-full transition-all"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
-          <span className="text-xs text-gray-400 whitespace-nowrap">
-            {packed} / {total} packed
-          </span>
-        </div>
-
-        {/* Smart Suggestions trigger — only shown for active trips */}
-        {!readOnly && (
-          <button
-            onClick={loadSuggestions}
-            disabled={suggestionsLoading}
-            className="mt-2 text-xs text-teal-400 font-medium disabled:opacity-40"
-          >
-            ✦ Suggest missing items
-          </button>
-        )}
+      {/* Filter bar */}
+      <div
+        className="flex items-center justify-between px-4 py-3"
+        style={{ borderBottom: '1px solid var(--zi-border)', background: 'var(--zi-surface)' }}
+      >
+        <FilterSegment
+          options={[
+            { id: 'all', label: 'All', count: total },
+            { id: 'unpacked', label: 'Unpacked', count: unpacked },
+            { id: 'packed', label: 'Packed', count: packed },
+          ]}
+          value={filter}
+          onChange={(v) => setFilter(v as 'all' | 'unpacked' | 'packed')}
+        />
       </div>
+
+      {/* Smart Suggestions CTA — only for active trips */}
+      {!readOnly && (
+        <div className="px-4 py-2" style={{ background: 'var(--zi-surface)' }}>
+          <SmartCTA onClick={loadSuggestions} />
+        </div>
+      )}
 
       {/* Grouped list */}
       <div className="flex-1">
         {grouped.map(({ category, entries: categoryEntries }) => (
           <div key={category}>
-            <div className="px-4 py-2 bg-white border-b border-gray-50">
-              <span className="text-xs font-semibold text-gray-400 uppercase tracking-widest">
-                {category}
-              </span>
-            </div>
+            <CategoryHeader
+              name={category}
+              meta={`${categoryEntries.filter(e => e.packed).length} / ${categoryEntries.length}`}
+            />
             {categoryEntries.map((entry) => (
-              <button
+              <ListRow
                 key={entry.id}
-                onClick={() => !readOnly && togglePacked(entry)}
-                disabled={readOnly}
-                className="w-full flex items-center gap-3 px-4 py-3 border-b border-gray-100 bg-white text-left disabled:cursor-default active:bg-gray-50 transition-colors"
+                leading={
+                  <PackCheck
+                    on={entry.packed}
+                    onClick={() => !readOnly && togglePacked(entry)}
+                  />
+                }
+                trailing={
+                  entry.quantity > 1 ? (
+                    <span style={{ fontSize: 12, color: 'var(--zi-text-subtle)', fontFamily: 'var(--zi-font-mono)' }}>
+                      ×{entry.quantity}
+                    </span>
+                  ) : undefined
+                }
               >
-                {/* Checkbox */}
-                <div
-                  className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
-                    entry.packed ? 'bg-sky-500 border-sky-500' : 'border-gray-300'
-                  }`}
-                >
-                  {entry.packed && (
-                    <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                    </svg>
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <span
-                    className={`text-sm font-medium ${
-                      entry.packed ? 'line-through text-gray-400' : 'text-gray-900'
-                    }`}
-                  >
-                    {entry.items.name}
-                  </span>
-                  {entry.quantity > 1 && (
-                    <span className="text-xs text-gray-400 ml-1">× {entry.quantity}</span>
-                  )}
-                </div>
-                {entry.is_adhoc && (
-                  <span className="text-xs text-gray-300">ad-hoc</span>
-                )}
-              </button>
+                <span style={{
+                  textDecoration: entry.packed ? 'line-through' : 'none',
+                  color: entry.packed ? 'var(--zi-text-subtle)' : 'var(--zi-text)',
+                }}>
+                  {entry.items.name}
+                </span>
+              </ListRow>
             ))}
+            {/* Category divider */}
+            <div style={{ height: 1, background: 'var(--zi-border)', margin: '0 20px' }} />
           </div>
         ))}
+        {grouped.length === 0 && (
+          <div className="flex flex-col items-center justify-center py-16 gap-2">
+            <p style={{ color: 'var(--zi-text-subtle)', fontSize: 14 }}>No items match this filter</p>
+          </div>
+        )}
       </div>
 
-      {/* FAB — Add Item (hidden for archived/past trips) */}
+      {/* FAB — pill style, hidden for read-only trips */}
       {!readOnly && (
         <button
           onClick={() => setShowAdHoc(true)}
-          className="fixed bottom-24 right-4 w-14 h-14 bg-gradient-to-b from-sky-400 to-sky-600 text-white rounded-full shadow-sky flex items-center justify-center text-2xl font-light"
-          style={{ maxWidth: 'calc(215px)' }}
+          className="fixed flex items-center gap-2"
+          style={{
+            bottom: 84,
+            right: 16,
+            background: 'var(--zi-brand)',
+            color: '#fff',
+            borderRadius: 'var(--zi-r-pill)',
+            boxShadow: 'var(--zi-elev-fab)',
+            padding: '12px 18px',
+            fontSize: 14,
+            fontWeight: 600,
+            minHeight: 44,
+            border: 'none',
+            cursor: 'pointer',
+          }}
         >
-          +
+          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
+          </svg>
+          Add item
         </button>
       )}
 
-      {/* Add Item sheet — full form */}
+      {/* Add Item sheet */}
       {showAdHoc && (
-        <div className="fixed inset-0 bg-black/50 flex items-end justify-center z-50">
+        <div className="fixed inset-0 flex items-end justify-center z-50" style={{ background: 'var(--zi-overlay-scrim)' }}>
           <div className="w-full max-w-[430px] bg-white rounded-t-3xl pt-4 max-h-[90dvh] flex flex-col">
             <div className="sheet-handle" />
-            <div className="flex items-center justify-between px-5 pb-3 border-b border-gray-100 flex-shrink-0">
-              <h3 className="text-base font-semibold text-gray-900">Add Item</h3>
-              <button onClick={() => { setShowAdHoc(false); resetAdHocForm(); }} className="text-gray-400 text-sm font-medium">Cancel</button>
+            <div className="flex items-center justify-between px-5 pb-3 flex-shrink-0" style={{ borderBottom: '1px solid var(--zi-border)' }}>
+              <h3 className="text-base font-semibold" style={{ color: 'var(--zi-text)' }}>Add item</h3>
+              <button onClick={() => { setShowAdHoc(false); resetAdHocForm(); }} className="text-sm font-medium" style={{ color: 'var(--zi-text-muted)' }}>Cancel</button>
             </div>
 
             <div className="flex-1 overflow-y-auto px-5 py-5 flex flex-col gap-5">
-              {/* Name */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
-                <input
-                  type="text"
-                  value={adHocName}
-                  onChange={(e) => setAdHocName(e.target.value)}
-                  placeholder="e.g. Golf Shirt"
-                  autoFocus
-                  className="w-full border border-gray-300 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
-                />
-              </div>
+              <Input
+                label="Name"
+                value={adHocName}
+                onChange={setAdHocName}
+                placeholder="e.g. Golf shirt"
+              />
 
-              {/* Category */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
+                <p className="text-[13px] font-medium mb-2" style={{ color: 'var(--zi-text)' }}>Category</p>
                 <div className="flex flex-wrap gap-2">
                   {CATEGORIES.map((cat) => (
-                    <button
-                      key={cat}
-                      onClick={() => setAdHocCategory(cat)}
-                      className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${
-                        adHocCategory === cat
-                          ? 'bg-sky-500 text-white border-sky-500 shadow-sky-sm'
-                          : 'bg-white text-gray-600 border-gray-300'
-                      }`}
-                    >
-                      {cat}
-                    </button>
+                    <Chip key={cat} selected={adHocCategory === cat} onClick={() => setAdHocCategory(cat)}>{cat}</Chip>
                   ))}
                 </div>
               </div>
 
-              {/* Quantity Type */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Quantity</label>
+                <p className="text-[13px] font-medium mb-2" style={{ color: 'var(--zi-text)' }}>Quantity</p>
                 <div className="flex flex-col gap-2">
                   {QUANTITY_TYPES.map(({ value, label, description }) => (
                     <button
                       key={value}
+                      type="button"
                       onClick={() => setAdHocQuantityType(value)}
-                      className={`flex items-start gap-3 px-3 py-3 rounded-xl border text-left transition-colors ${
-                        adHocQuantityType === value ? 'border-sky-500 bg-sky-50' : 'border-gray-200'
-                      }`}
+                      className="flex items-start gap-3 px-3 py-3 text-left"
+                      style={{
+                        borderRadius: 'var(--zi-r-lg)',
+                        border: `1px solid ${adHocQuantityType === value ? 'var(--zi-brand)' : 'var(--zi-border-strong)'}`,
+                        background: adHocQuantityType === value ? 'var(--zi-brand-tint)' : 'transparent',
+                      }}
                     >
-                      <div
-                        className={`mt-0.5 w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${
-                          adHocQuantityType === value ? 'border-sky-500' : 'border-gray-300'
-                        }`}
-                      >
-                        {adHocQuantityType === value && <div className="w-2 h-2 rounded-full bg-sky-500" />}
+                      <div className="mt-0.5 w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center"
+                        style={{ borderColor: adHocQuantityType === value ? 'var(--zi-brand)' : 'var(--zi-border-strong)' }}>
+                        {adHocQuantityType === value && <div className="w-2 h-2 rounded-full" style={{ background: 'var(--zi-brand)' }} />}
                       </div>
                       <div>
-                        <p className={`text-sm font-medium ${adHocQuantityType === value ? 'text-sky-700' : 'text-gray-800'}`}>{label}</p>
-                        <p className="text-xs text-gray-400 mt-0.5">{description}</p>
+                        <p className="text-sm font-medium" style={{ color: 'var(--zi-text)' }}>{label}</p>
+                        <p className="text-xs mt-0.5" style={{ color: 'var(--zi-text-subtle)' }}>{description}</p>
                       </div>
                     </button>
                   ))}
                 </div>
               </div>
 
-              {/* Essential toggle */}
-              <div className="flex items-center justify-between py-2 border-b border-gray-100">
+              <div className="flex items-center justify-between py-2" style={{ borderBottom: '1px solid var(--zi-border)' }}>
                 <div>
-                  <p className="text-sm font-medium text-gray-800">Essential</p>
-                  <p className="text-xs text-gray-400 mt-0.5">Always packed on every trip</p>
+                  <p className="text-sm font-medium" style={{ color: 'var(--zi-text)' }}>Essential</p>
+                  <p className="text-xs mt-0.5" style={{ color: 'var(--zi-text-subtle)' }}>Always packed on every trip</p>
                 </div>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={adHocEssential}
-                    onChange={(e) => setAdHocEssential(e.target.checked)}
-                    className="sr-only peer"
-                  />
-                  <div className="w-11 h-6 bg-gray-200 peer-focus:ring-2 peer-focus:ring-sky-500 rounded-full peer peer-checked:bg-sky-500 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-5" />
-                </label>
+                <Toggle on={adHocEssential} onChange={setAdHocEssential} />
               </div>
 
-              {/* Activities — hidden when essential */}
               {!adHocEssential && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Activities</label>
-                  <p className="text-xs text-gray-400 mb-2">
+                  <p className="text-[13px] font-medium mb-1" style={{ color: 'var(--zi-text)' }}>Activities</p>
+                  <p className="text-xs mb-2" style={{ color: 'var(--zi-text-subtle)' }}>
                     This item will appear in packing lists for trips with these activities.
                   </p>
                   <div className="flex flex-wrap gap-2">
                     {allActivities.map((a) => {
                       const selected = adHocActivityIds.includes(a.id);
                       return (
-                        <button
+                        <Chip
                           key={a.id}
+                          selected={selected}
                           onClick={() => setAdHocActivityIds((prev) =>
                             selected ? prev.filter((id) => id !== a.id) : [...prev, a.id]
                           )}
-                          className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${
-                            selected
-                              ? 'bg-sky-500 text-white border-sky-500 shadow-sky-sm'
-                              : 'bg-white text-gray-600 border-gray-300'
-                          }`}
                         >
                           {a.name}
-                        </button>
+                        </Chip>
                       );
                     })}
                   </div>
 
-                  {/* Inline new activity form */}
                   {showAdHocNewActivity ? (
-                    <div className="mt-3">
-                      <div className="flex gap-2">
-                        <input
-                          type="text"
-                          value={adHocNewActivityName}
-                          onChange={(e) => setAdHocNewActivityName(e.target.value)}
-                          onKeyDown={(e) => e.key === 'Enter' && addAdHocActivity()}
-                          placeholder="Activity name"
-                          autoFocus
-                          className="flex-1 border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
-                        />
-                        <button
-                          onClick={addAdHocActivity}
-                          disabled={adHocAddingActivity}
-                          className="px-3 py-2 bg-gradient-to-b from-sky-400 to-sky-600 text-white text-sm font-medium rounded-xl disabled:opacity-40 shadow-sky-sm"
-                        >
-                          {adHocAddingActivity ? 'Adding…' : 'Add'}
-                        </button>
-                        <button
-                          onClick={() => { setShowAdHocNewActivity(false); setAdHocNewActivityName(''); setAdHocActivityError(''); }}
-                          className="px-3 py-2 text-sm text-gray-500 border border-gray-300 rounded-xl"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                      {adHocActivityError && <p className="text-xs text-red-500 mt-1">{adHocActivityError}</p>}
+                    <div className="mt-3 flex gap-2">
+                      <input
+                        type="text"
+                        value={adHocNewActivityName}
+                        onChange={(e) => setAdHocNewActivityName(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && addAdHocActivity()}
+                        placeholder="Activity name"
+                        autoFocus
+                        className="flex-1 border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[var(--zi-brand)]"
+                        style={{ borderColor: 'var(--zi-border-strong)', borderRadius: 'var(--zi-r-lg)' }}
+                      />
+                      <SecondaryBtn onClick={addAdHocActivity} disabled={adHocAddingActivity}>
+                        {adHocAddingActivity ? '…' : 'Add'}
+                      </SecondaryBtn>
+                      <SecondaryBtn onClick={() => { setShowAdHocNewActivity(false); setAdHocNewActivityName(''); setAdHocActivityError(''); }}>
+                        Cancel
+                      </SecondaryBtn>
+                      {adHocActivityError && <p className="text-xs mt-1" style={{ color: 'var(--zi-danger)' }}>{adHocActivityError}</p>}
                     </div>
                   ) : (
                     <button
+                      type="button"
                       onClick={() => setShowAdHocNewActivity(true)}
-                      className="mt-2 text-sm text-sky-500 font-medium"
+                      className="mt-2 text-sm font-medium"
+                      style={{ color: 'var(--zi-brand)' }}
                     >
                       + New activity
                     </button>
@@ -880,21 +874,15 @@ export default function PackingListPage() {
                 </div>
               )}
 
-              {/* Error */}
               {adHocError && (
-                <div className="bg-red-50 border border-red-200 rounded-xl px-3 py-2">
-                  <p className="text-sm text-red-600">{adHocError}</p>
-                </div>
+                <p className="text-sm px-3 py-2 rounded-[var(--zi-r-lg)]" style={{ background: 'var(--zi-danger-tint)', color: 'var(--zi-danger)', border: '1px solid rgba(239,68,68,.2)' }}>
+                  {adHocError}
+                </p>
               )}
 
-              {/* Actions */}
-              <button
-                onClick={addAdHocItem}
-                disabled={adHocSaving}
-                className="w-full bg-gradient-to-b from-sky-400 to-sky-600 text-white font-semibold py-4 rounded-xl disabled:opacity-50 shadow-sky"
-              >
-                {adHocSaving ? 'Adding…' : 'Add to Trip'}
-              </button>
+              <PrimaryBtn onClick={addAdHocItem} disabled={adHocSaving} full>
+                {adHocSaving ? 'Adding…' : 'Add to trip'}
+              </PrimaryBtn>
             </div>
           </div>
         </div>
@@ -910,46 +898,41 @@ export default function PackingListPage() {
         </div>
       )}
 
-      {/* Smart Suggestions bottom sheet — shown only after results are ready */}
+      {/* Smart Suggestions sheet */}
       {showSuggestions && (
-        <div className="fixed inset-0 bg-black/50 flex items-end justify-center z-50">
+        <div className="fixed inset-0 flex items-end justify-center z-50" style={{ background: 'var(--zi-overlay-scrim)' }}>
           <div className="w-full max-w-[430px] bg-white rounded-t-3xl flex flex-col max-h-[80vh]">
             <div className="flex flex-col px-6 pt-4 pb-0 flex-shrink-0">
               <div className="sheet-handle" />
             </div>
-            <div className="flex items-center justify-between px-6 pb-3 border-b border-gray-100 flex-shrink-0">
-              <h3 className="text-lg font-semibold text-teal-600">✦ Smart Suggestions</h3>
-              <button
-                onClick={() => setShowSuggestions(false)}
-                className="text-gray-400 text-sm font-medium"
-              >
+            <div className="flex items-center justify-between px-6 pb-3 flex-shrink-0" style={{ borderBottom: '1px solid var(--zi-border)' }}>
+              <h3 className="text-base font-semibold flex items-center gap-2" style={{ color: 'var(--zi-smart-deep)' }}>
+                <span style={{ color: 'var(--zi-smart)' }}>✦</span> What am I missing?
+              </h3>
+              <button onClick={() => setShowSuggestions(false)} className="text-sm font-medium" style={{ color: 'var(--zi-text-muted)' }}>
                 Done
               </button>
             </div>
-
             <div className="overflow-y-auto flex-1 px-6 py-4">
               {suggestionsError && (
-                <p className="text-sm text-gray-500 py-6 text-center">{suggestionsError}</p>
+                <p className="text-sm py-6 text-center" style={{ color: 'var(--zi-text-muted)' }}>{suggestionsError}</p>
               )}
-
               {!suggestionsError && suggestions.length > 0 && (
                 <div className="flex flex-col gap-3">
                   {suggestions.map((s) => (
-                    <div
-                      key={s.name}
-                      className="flex items-start gap-3 py-3 border-b border-gray-100 last:border-0"
-                    >
+                    <div key={s.name} className="flex items-start gap-3 py-3" style={{ borderBottom: '1px solid var(--zi-border)' }}>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900">{s.name}</p>
-                        <p className="text-xs text-gray-400 mt-0.5">{s.reason}</p>
-                        <span className="inline-block mt-1 text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
+                        <p className="text-sm font-medium" style={{ color: 'var(--zi-text)' }}>{s.name}</p>
+                        <p className="text-xs mt-0.5" style={{ color: 'var(--zi-text-subtle)' }}>{s.reason}</p>
+                        <span className="inline-block mt-1 text-xs px-2 py-0.5" style={{ color: 'var(--zi-text-subtle)', background: 'var(--zi-border)', borderRadius: 'var(--zi-r-pill)' }}>
                           {s.category}
                         </span>
                       </div>
                       <button
                         onClick={() => addSuggestion(s)}
                         disabled={addingSuggestion === s.name}
-                        className="flex-shrink-0 bg-teal-400 text-white text-xs font-semibold px-3 py-1.5 rounded-full disabled:opacity-50"
+                        className="flex-shrink-0 text-white text-xs font-semibold px-3 py-1.5 disabled:opacity-50"
+                        style={{ background: 'var(--zi-smart)', borderRadius: 'var(--zi-r-pill)', border: 'none', cursor: 'pointer' }}
                       >
                         {addingSuggestion === s.name ? '…' : 'Add'}
                       </button>
@@ -964,183 +947,121 @@ export default function PackingListPage() {
 
       {/* Archive confirm */}
       {showArchiveConfirm && (
-        <div className="fixed inset-0 bg-black/50 flex items-end justify-center z-50">
+        <div className="fixed inset-0 flex items-end justify-center z-50" style={{ background: 'var(--zi-overlay-scrim)' }}>
           <div className="w-full max-w-[430px] bg-white rounded-t-3xl p-6 pt-4">
             <div className="sheet-handle" />
-            <h3 className="text-lg font-semibold mb-2">
-              {archivePrompted ? '🎉 All Packed!' : 'Archive Trip?'}
+            <h3 className="text-lg font-semibold mb-2" style={{ color: 'var(--zi-text)' }}>
+              {archivePrompted ? '🎉 All packed!' : 'Archive trip?'}
             </h3>
-            <p className="text-gray-500 text-sm mb-6">
+            <p className="text-sm mb-6" style={{ color: 'var(--zi-text-muted)' }}>
               {archivePrompted
-                ? 'You\'ve packed everything. Archive this trip?'
+                ? "You've packed everything. Archive this trip?"
                 : 'This trip will be moved to your archive.'}
             </p>
             <div className="flex flex-col gap-2">
-              <button
-                onClick={archiveTrip}
-                className="w-full bg-gradient-to-b from-sky-400 to-sky-600 text-white font-semibold py-3 rounded-xl shadow-sky-sm"
-              >
-                Archive Trip
-              </button>
-              <button
-                onClick={() => { setShowArchiveConfirm(false); setArchivePrompted(false); }}
-                className="w-full bg-white text-gray-700 font-semibold py-3 rounded-xl border border-gray-200 shadow-sm"
-              >
-                Not Yet
-              </button>
+              <PrimaryBtn onClick={archiveTrip} full>Archive trip</PrimaryBtn>
+              <SecondaryBtn onClick={() => { setShowArchiveConfirm(false); setArchivePrompted(false); }} full>
+                Not yet
+              </SecondaryBtn>
             </div>
           </div>
         </div>
       )}
 
-      {/* Edit Trip bottom sheet */}
+      {/* Edit Trip sheet */}
       {showEditTrip && (
-        <div className="fixed inset-0 bg-black/50 flex items-end justify-center z-50">
+        <div className="fixed inset-0 flex items-end justify-center z-50" style={{ background: 'var(--zi-overlay-scrim)' }}>
           <div className="w-full max-w-[430px] bg-white rounded-t-3xl flex flex-col max-h-[90vh]">
             <div className="flex flex-col px-6 pt-4 pb-0 flex-shrink-0">
               <div className="sheet-handle" />
             </div>
-            <div className="flex items-center justify-between px-6 pb-3 border-b border-gray-100 flex-shrink-0">
-              <h3 className="text-lg font-semibold font-logo text-sky-500">Edit Trip</h3>
-              <button onClick={() => setShowEditTrip(false)} className="text-gray-400 text-sm font-medium">Cancel</button>
+            <div className="flex items-center justify-between px-6 pb-3 flex-shrink-0" style={{ borderBottom: '1px solid var(--zi-border)' }}>
+              <h3 className="text-base font-semibold" style={{ color: 'var(--zi-text)' }}>Edit trip</h3>
+              <button onClick={() => setShowEditTrip(false)} className="text-sm font-medium" style={{ color: 'var(--zi-text-muted)' }}>Cancel</button>
             </div>
 
             <div className="overflow-y-auto flex-1 px-6 py-5 flex flex-col gap-5">
-              {/* Name */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Trip Name</label>
-                <input
-                  type="text"
-                  value={editName}
-                  onChange={(e) => setEditName(e.target.value)}
-                  className="w-full border border-gray-300 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
-                />
-              </div>
+              <Input label="Trip name" value={editName} onChange={setEditName} />
+              <Input label="Destination" value={editDestination} onChange={setEditDestination} placeholder="e.g. Paris, France" />
 
-              {/* Destination */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Destination</label>
-                <input
-                  type="text"
-                  value={editDestination}
-                  onChange={(e) => setEditDestination(e.target.value)}
-                  placeholder="e.g. Paris, France"
-                  className="w-full border border-gray-300 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
-                />
-              </div>
-
-              {/* Dates */}
               <div>
                 <div className="flex gap-3">
                   <div className="flex-1">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
-                    <input
-                      type="date"
-                      value={editStartDate}
-                      onChange={(e) => setEditStartDate(e.target.value)}
-                      className="w-full border border-gray-300 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
-                    />
+                    <Input label="Start date" type="date" value={editStartDate} onChange={setEditStartDate} />
                   </div>
                   {editEndDateMode === 'nights' ? (
                     <div className="flex-1">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Nights</label>
-                      <input
-                        type="number"
-                        min="1"
-                        value={editNights}
-                        onChange={(e) => setEditNights(e.target.value)}
-                        className="w-full border border-gray-300 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
-                      />
+                      <Input label="Nights" type="number" value={editNights} onChange={setEditNights} />
                     </div>
                   ) : (
                     <div className="flex-1">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
-                      <input
-                        type="date"
-                        value={editEndDate}
-                        min={editStartDate ? addDays(editStartDate, 1) : ''}
-                        onChange={(e) => setEditEndDate(e.target.value)}
-                        className="w-full border border-gray-300 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
-                      />
+                      <Input label="End date" type="date" value={editEndDate} onChange={setEditEndDate} />
                     </div>
                   )}
                 </div>
                 <div className="flex items-center justify-between mt-1.5">
                   {editEndDateMode === 'nights' && editStartDate && editNights && !isNaN(parseInt(editNights)) && (
-                    <p className="text-xs text-gray-400">Returns: {addDays(editStartDate, parseInt(editNights))}</p>
+                    <p className="text-xs" style={{ color: 'var(--zi-text-subtle)' }}>Returns: {addDays(editStartDate, parseInt(editNights))}</p>
                   )}
                   <button
                     type="button"
                     onClick={() => setEditEndDateMode(editEndDateMode === 'nights' ? 'manual' : 'nights')}
-                    className="text-xs text-sky-500 font-medium ml-auto"
+                    className="text-xs font-medium ml-auto"
+                    style={{ color: 'var(--zi-brand)' }}
                   >
                     {editEndDateMode === 'nights' ? 'Enter end date manually' : 'Use number of nights'}
                   </button>
                 </div>
               </div>
 
-              {/* Activities */}
               {allActivities.length > 0 && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Activities</label>
+                  <p className="text-[13px] font-medium mb-2" style={{ color: 'var(--zi-text)' }}>Activities</p>
                   <div className="flex flex-wrap gap-2">
                     {allActivities.map((a) => {
                       const selected = editActivityIds.includes(a.id);
                       return (
-                        <button
+                        <Chip
                           key={a.id}
+                          selected={selected}
                           onClick={() => setEditActivityIds((prev) =>
                             selected ? prev.filter((id) => id !== a.id) : [...prev, a.id]
                           )}
-                          className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${
-                            selected ? 'bg-sky-500 text-white border-sky-500 shadow-sky-sm' : 'bg-white text-gray-600 border-gray-300'
-                          }`}
                         >
                           {a.name}
-                        </button>
+                        </Chip>
                       );
                     })}
                   </div>
                 </div>
               )}
 
-              {/* Toggles */}
               <div className="flex flex-col gap-3">
-                <div className="flex items-center justify-between py-2 border-b border-gray-100">
+                <div className="flex items-center justify-between py-2" style={{ borderBottom: '1px solid var(--zi-border)' }}>
                   <div>
-                    <p className="text-sm font-medium text-gray-800">Carry-on Only</p>
-                    <p className="text-xs text-gray-400">No checked luggage</p>
+                    <p className="text-sm font-medium" style={{ color: 'var(--zi-text)' }}>Carry-on only</p>
+                    <p className="text-xs mt-0.5" style={{ color: 'var(--zi-text-subtle)' }}>No checked luggage</p>
                   </div>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" checked={editCarryOnOnly} onChange={(e) => setEditCarryOnOnly(e.target.checked)} className="sr-only peer" />
-                    <div className="w-11 h-6 bg-gray-200 peer-focus:ring-2 peer-focus:ring-sky-500 rounded-full peer peer-checked:bg-sky-500 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-5" />
-                  </label>
+                  <Toggle on={editCarryOnOnly} onChange={setEditCarryOnOnly} />
                 </div>
                 <div className="flex items-center justify-between py-2">
                   <div>
-                    <p className="text-sm font-medium text-gray-800">Laundry Available</p>
-                    <p className="text-xs text-gray-400">Pack fewer clothes</p>
+                    <p className="text-sm font-medium" style={{ color: 'var(--zi-text)' }}>Laundry available</p>
+                    <p className="text-xs mt-0.5" style={{ color: 'var(--zi-text-subtle)' }}>Pack fewer clothes</p>
                   </div>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" checked={editLaundryAvailable} onChange={(e) => setEditLaundryAvailable(e.target.checked)} className="sr-only peer" />
-                    <div className="w-11 h-6 bg-gray-200 peer-focus:ring-2 peer-focus:ring-sky-500 rounded-full peer peer-checked:bg-sky-500 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-5" />
-                  </label>
+                  <Toggle on={editLaundryAvailable} onChange={setEditLaundryAvailable} />
                 </div>
               </div>
 
               {editError && (
-                <div className="bg-red-50 border border-red-200 rounded-xl px-3 py-2">
-                  <p className="text-sm text-red-600">{editError}</p>
-                </div>
+                <p className="text-sm px-3 py-2 rounded-[var(--zi-r-lg)]" style={{ background: 'var(--zi-danger-tint)', color: 'var(--zi-danger)', border: '1px solid rgba(239,68,68,.2)' }}>
+                  {editError}
+                </p>
               )}
 
-              <button
-                onClick={saveEditTrip}
-                disabled={editSaving}
-                className="w-full bg-gradient-to-b from-sky-400 to-sky-600 text-white font-semibold py-4 rounded-xl disabled:opacity-50 shadow-sky"
-              >
-                {editSaving ? 'Saving…' : 'Save Changes'}
-              </button>
+              <PrimaryBtn onClick={saveEditTrip} disabled={editSaving} full>
+                {editSaving ? 'Saving…' : 'Save changes'}
+              </PrimaryBtn>
             </div>
           </div>
         </div>

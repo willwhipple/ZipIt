@@ -6,6 +6,11 @@ import { createClient } from '@/lib/supabase/client';
 import { generatePackingList } from '@/lib/generation';
 import type { Activity, ParsedTripDescription } from '@/types';
 import LuggageSpinner from '@/components/LuggageSpinner';
+import { PageHeader, HeaderIconBtn } from '@/components/ui/PageHeader';
+import { Input } from '@/components/ui/Input';
+import { Chip } from '@/components/ui/Chip';
+import { Toggle } from '@/components/ui/Toggle';
+import { PrimaryBtn } from '@/components/ui/Button';
 
 // Adds `days` to a YYYY-MM-DD string, returns YYYY-MM-DD.
 // Uses T00:00:00 suffix to avoid UTC-vs-local timezone offset shifting the date.
@@ -180,24 +185,30 @@ export default function CreateTripPage() {
 
   return (
     <div className="flex flex-col min-h-full">
-      {/* Header */}
-      <div className="header-noise flex items-center gap-3 px-4 pt-12 pb-4 bg-gradient-to-b from-sky-50 to-white">
-        <button onClick={() => router.back()} aria-label="Back" className="text-sky-500 -ml-1">
-          <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" /></svg>
-        </button>
-        <h1 className="text-lg font-semibold font-logo text-sky-500 flex-1">New Trip</h1>
-      </div>
+      <PageHeader
+        leading={
+          <HeaderIconBtn onClick={() => router.back()} aria-label="Back">
+            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
+            </svg>
+          </HeaderIconBtn>
+        }
+        title="New trip"
+      />
 
       <div className="flex flex-col gap-5 px-4 py-5">
-        {/* Smart Suggestions — natural language description */}
-        <div className="bg-gradient-to-br from-teal-50 to-white rounded-2xl p-4 ring-1 ring-teal-100">
-          <p className="text-sm font-medium text-teal-700 mb-2">✦ Describe your trip</p>
+        {/* AI — natural language description */}
+        <div className="rounded-[var(--zi-r-xl)] p-4 zi-grad-smart-quiet" style={{ border: '1px solid rgba(45,212,191,.25)' }}>
+          <p className="text-sm font-medium mb-2" style={{ color: 'var(--zi-smart-deep)' }}>
+            <span style={{ color: 'var(--zi-smart)' }}>✦</span> Describe your trip
+          </p>
           {nlDone ? (
             <div className="flex items-center justify-between">
-              <p className="text-sm text-green-700 font-medium">✓ Form filled from your description</p>
+              <p className="text-sm font-medium" style={{ color: 'var(--zi-success)' }}>✓ Form filled from your description</p>
               <button
                 onClick={() => { setNlDone(false); setNlError(''); }}
-                className="text-xs text-teal-500 font-medium ml-3"
+                className="text-xs font-medium ml-3"
+                style={{ color: 'var(--zi-smart-deep)' }}
               >
                 Edit
               </button>
@@ -209,13 +220,24 @@ export default function CreateTripPage() {
                 onChange={(e) => setNlDescription(e.target.value)}
                 placeholder={`e.g. "A long weekend in Paris for a friend's wedding, staying at a hotel, flying carry-on only"`}
                 rows={3}
-                className="w-full bg-white border border-teal-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400 resize-none"
+                className="w-full px-3 py-2.5 text-sm resize-none outline-none"
+                style={{
+                  background: 'white',
+                  border: '1px solid rgba(45,212,191,.4)',
+                  borderRadius: 'var(--zi-r-lg)',
+                }}
               />
-              {nlError && <p className="text-xs text-red-500 mt-1">{nlError}</p>}
+              {nlError && <p className="text-xs mt-1" style={{ color: 'var(--zi-danger)' }}>{nlError}</p>}
               <button
                 onClick={handleNLParse}
                 disabled={nlParsing || !nlDescription.trim()}
-                className="mt-2 w-full bg-gradient-to-b from-teal-400 to-teal-500 text-white text-sm font-semibold py-2.5 rounded-xl disabled:opacity-50 shadow-teal"
+                className="mt-2 w-full text-white text-sm font-semibold py-2.5 disabled:opacity-50"
+                style={{
+                  background: 'var(--zi-smart-lo)',
+                  borderRadius: 'var(--zi-r-lg)',
+                  border: 'none',
+                  cursor: 'pointer',
+                }}
               >
                 {nlParsing ? 'Filling form…' : 'Fill form from description'}
               </button>
@@ -223,162 +245,83 @@ export default function CreateTripPage() {
           )}
         </div>
 
-        {/* Trip Name */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Trip Name</label>
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="e.g. Mexico City Weekend"
-            className="w-full border border-gray-300 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
-          />
-        </div>
+        <Input label="Trip name" value={name} onChange={setName} placeholder="e.g. Mexico City weekend" />
 
-        {/* Destination */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Destination</label>
-          <input
-            type="text"
-            value={destination}
-            onChange={(e) => setDestination(e.target.value)}
-            placeholder="e.g. Mexico City, Mexico"
-            className="w-full border border-gray-300 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
-          />
-          <p className="text-xs text-gray-400 mt-1">
-            For best results, include city and country (e.g. Dublin, Ireland)
+          <Input label="Destination" value={destination} onChange={setDestination} placeholder="e.g. Mexico City, Mexico" />
+          <p className="text-xs mt-1" style={{ color: 'var(--zi-text-subtle)' }}>
+            Include city and country for weather (e.g. Dublin, Ireland)
           </p>
         </div>
 
         {/* Dates */}
         <div>
           <div className="flex gap-3">
-            {/* Start date — always shown */}
             <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
-              <input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="w-full border border-gray-300 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
-              />
+              <Input label="Start date" type="date" value={startDate} onChange={setStartDate} />
             </div>
-
             {endDateMode === 'nights' ? (
-              /* Nights input */
               <div className="flex-1">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Nights</label>
-                <input
-                  type="number"
-                  min="1"
-                  value={nights}
-                  onChange={(e) => setNights(e.target.value)}
-                  placeholder="e.g. 4"
-                  className="w-full border border-gray-300 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
-                />
+                <Input label="Nights" type="number" value={nights} onChange={setNights} placeholder="e.g. 4" />
               </div>
             ) : (
-              /* Manual end date — min set to day after start date */
               <div className="flex-1">
-                <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
-                <input
-                  type="date"
-                  value={endDate}
-                  min={startDate ? addDays(startDate, 1) : ''}
-                  onChange={(e) => setEndDate(e.target.value)}
-                  className="w-full border border-gray-300 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
-                />
+                <Input label="End date" type="date" value={endDate} onChange={setEndDate} />
               </div>
             )}
           </div>
-
-          {/* Computed return date + mode toggle */}
           <div className="flex items-center justify-between mt-2">
             {endDateMode === 'nights' && computedEndDate && (
-              <p className="text-xs text-gray-400">Returns: {computedEndDate}</p>
+              <p className="text-xs" style={{ color: 'var(--zi-text-subtle)' }}>Returns: {computedEndDate}</p>
             )}
             <button
               type="button"
               onClick={() => setEndDateMode(endDateMode === 'nights' ? 'manual' : 'nights')}
-              className="text-xs text-sky-500 font-medium ml-auto"
+              className="text-xs font-medium ml-auto"
+              style={{ color: 'var(--zi-brand)' }}
             >
               {endDateMode === 'nights' ? 'Enter end date manually' : 'Use number of nights instead'}
             </button>
           </div>
         </div>
 
-        {/* Activities */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Activities</label>
+          <p className="text-[13px] font-medium mb-2" style={{ color: 'var(--zi-text)' }}>Activities</p>
           <div className="flex flex-wrap gap-2">
-            {activities.map((a) => {
-              const selected = selectedActivityIds.includes(a.id);
-              return (
-                <button
-                  key={a.id}
-                  onClick={() => toggleActivity(a.id)}
-                  className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${
-                    selected
-                      ? 'bg-sky-500 text-white border-sky-500 shadow-sky-sm'
-                      : 'bg-white text-gray-600 border-gray-300'
-                  }`}
-                >
-                  {a.name}
-                </button>
-              );
-            })}
+            {activities.map((a) => (
+              <Chip key={a.id} selected={selectedActivityIds.includes(a.id)} onClick={() => toggleActivity(a.id)}>
+                {a.name}
+              </Chip>
+            ))}
           </div>
         </div>
 
-        {/* Toggles */}
         <div className="flex flex-col gap-3">
-          <div className="flex items-center justify-between py-2 border-b border-gray-100">
+          <div className="flex items-center justify-between py-2" style={{ borderBottom: '1px solid var(--zi-border)' }}>
             <div>
-              <p className="text-sm font-medium text-gray-800">Carry-on Only</p>
-              <p className="text-xs text-gray-400">No checked luggage</p>
+              <p className="text-sm font-medium" style={{ color: 'var(--zi-text)' }}>Carry-on only</p>
+              <p className="text-xs mt-0.5" style={{ color: 'var(--zi-text-subtle)' }}>No checked luggage</p>
             </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                checked={carryOnOnly}
-                onChange={(e) => setCarryOnOnly(e.target.checked)}
-                className="sr-only peer"
-              />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:ring-2 peer-focus:ring-sky-500 rounded-full peer peer-checked:bg-sky-500 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-5" />
-            </label>
+            <Toggle on={carryOnOnly} onChange={setCarryOnOnly} />
           </div>
           <div className="flex items-center justify-between py-2">
             <div>
-              <p className="text-sm font-medium text-gray-800">Laundry Available</p>
-              <p className="text-xs text-gray-400">Pack fewer clothes</p>
+              <p className="text-sm font-medium" style={{ color: 'var(--zi-text)' }}>Laundry available</p>
+              <p className="text-xs mt-0.5" style={{ color: 'var(--zi-text-subtle)' }}>Pack fewer clothes</p>
             </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                checked={laundryAvailable}
-                onChange={(e) => setLaundryAvailable(e.target.checked)}
-                className="sr-only peer"
-              />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:ring-2 peer-focus:ring-sky-500 rounded-full peer peer-checked:bg-sky-500 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-5" />
-            </label>
+            <Toggle on={laundryAvailable} onChange={setLaundryAvailable} />
           </div>
         </div>
 
-        {/* Error */}
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-xl px-3 py-2">
-            <p className="text-sm text-red-600">{error}</p>
-          </div>
+          <p className="text-sm px-3 py-2 rounded-[var(--zi-r-lg)]" style={{ background: 'var(--zi-danger-tint)', color: 'var(--zi-danger)', border: '1px solid rgba(239,68,68,.2)' }}>
+            {error}
+          </p>
         )}
 
-        {/* Submit */}
-        <button
-          onClick={handleSubmit}
-          disabled={loading}
-          className="w-full bg-gradient-to-b from-sky-400 to-sky-600 text-white font-semibold py-4 rounded-xl mt-2 disabled:opacity-50 shadow-sky"
-        >
-          Generate Packing List
-        </button>
+        <PrimaryBtn onClick={handleSubmit} disabled={loading} full className="mt-2 py-4">
+          Generate packing list
+        </PrimaryBtn>
       </div>
     </div>
   );

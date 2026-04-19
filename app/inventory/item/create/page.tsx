@@ -4,6 +4,11 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import type { Activity, CategoryType, QuantityType } from '@/types';
+import { PageHeader, HeaderIconBtn } from '@/components/ui/PageHeader';
+import { Input } from '@/components/ui/Input';
+import { Chip } from '@/components/ui/Chip';
+import { Toggle } from '@/components/ui/Toggle';
+import { PrimaryBtn, SecondaryBtn } from '@/components/ui/Button';
 
 const CATEGORIES: CategoryType[] = ['Clothing', 'Shoes', 'Toiletries', 'Accessories', 'Equipment'];
 const QUANTITY_TYPES: { value: QuantityType; label: string; description: string }[] = [
@@ -100,182 +105,100 @@ export default function CreateItemPage() {
 
   return (
     <div className="flex flex-col min-h-full">
-      {/* Header */}
-      <div className="header-noise flex items-center gap-3 px-4 pt-12 pb-4 bg-gradient-to-b from-sky-50 to-white">
-        <button onClick={() => router.back()} aria-label="Back" className="text-sky-500 -ml-1">
-          <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" /></svg>
-        </button>
-        <h1 className="text-lg font-semibold font-logo text-sky-500 flex-1">Add Item</h1>
-      </div>
+      <PageHeader
+        leading={
+          <HeaderIconBtn onClick={() => router.back()} aria-label="Back">
+            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
+            </svg>
+          </HeaderIconBtn>
+        }
+        title="Add item"
+      />
 
       <div className="flex flex-col gap-5 px-4 py-5">
-        {/* Name */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="e.g. Golf Shirt"
-            autoFocus
-            className="w-full border border-gray-300 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
-          />
-        </div>
+        <Input label="Name" value={name} onChange={setName} placeholder="e.g. Golf shirt" />
 
-        {/* Category */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
+          <p className="text-[13px] font-medium mb-2" style={{ color: 'var(--zi-text)' }}>Category</p>
           <div className="flex flex-wrap gap-2">
             {CATEGORIES.map((cat) => (
-              <button
-                key={cat}
-                onClick={() => setCategory(cat)}
-                className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${
-                  category === cat
-                    ? 'bg-sky-500 text-white border-sky-500 shadow-sky-sm'
-                    : 'bg-white text-gray-600 border-gray-300'
-                }`}
-              >
-                {cat}
-              </button>
+              <Chip key={cat} selected={category === cat} onClick={() => setCategory(cat)}>{cat}</Chip>
             ))}
           </div>
         </div>
 
-        {/* Quantity Type */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Quantity</label>
+          <p className="text-[13px] font-medium mb-2" style={{ color: 'var(--zi-text)' }}>Quantity</p>
           <div className="flex flex-col gap-2">
             {QUANTITY_TYPES.map(({ value, label, description }) => (
-              <button
-                key={value}
-                onClick={() => setQuantityType(value)}
-                className={`flex items-start gap-3 px-3 py-3 rounded-xl border text-left transition-colors ${
-                  quantityType === value
-                    ? 'border-sky-500 bg-sky-50'
-                    : 'border-gray-200'
-                }`}
-              >
-                <div
-                  className={`mt-0.5 w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${
-                    quantityType === value ? 'border-sky-500' : 'border-gray-300'
-                  }`}
-                >
-                  {quantityType === value && (
-                    <div className="w-2 h-2 rounded-full bg-sky-500" />
-                  )}
+              <button key={value} type="button" onClick={() => setQuantityType(value)} className="flex items-start gap-3 px-3 py-3 text-left"
+                style={{ borderRadius: 'var(--zi-r-lg)', border: `1px solid ${quantityType === value ? 'var(--zi-brand)' : 'var(--zi-border-strong)'}`, background: quantityType === value ? 'var(--zi-brand-tint)' : 'transparent' }}>
+                <div className="mt-0.5 w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center"
+                  style={{ borderColor: quantityType === value ? 'var(--zi-brand)' : 'var(--zi-border-strong)' }}>
+                  {quantityType === value && <div className="w-2 h-2 rounded-full" style={{ background: 'var(--zi-brand)' }} />}
                 </div>
                 <div>
-                  <p className={`text-sm font-medium ${quantityType === value ? 'text-sky-700' : 'text-gray-800'}`}>
-                    {label}
-                  </p>
-                  <p className="text-xs text-gray-400 mt-0.5">{description}</p>
+                  <p className="text-sm font-medium" style={{ color: 'var(--zi-text)' }}>{label}</p>
+                  <p className="text-xs mt-0.5" style={{ color: 'var(--zi-text-subtle)' }}>{description}</p>
                 </div>
               </button>
             ))}
           </div>
         </div>
 
-        {/* Essential toggle */}
-        <div className="flex items-center justify-between py-2 border-b border-gray-100">
+        <div className="flex items-center justify-between py-2" style={{ borderBottom: '1px solid var(--zi-border)' }}>
           <div>
-            <p className="text-sm font-medium text-gray-800">Essential</p>
-            <p className="text-xs text-gray-400 mt-0.5">Always packed on every trip</p>
+            <p className="text-sm font-medium" style={{ color: 'var(--zi-text)' }}>Essential</p>
+            <p className="text-xs mt-0.5" style={{ color: 'var(--zi-text-subtle)' }}>Always packed on every trip</p>
           </div>
-          <label className="relative inline-flex items-center cursor-pointer">
-            <input
-              type="checkbox"
-              checked={essential}
-              onChange={(e) => setEssential(e.target.checked)}
-              className="sr-only peer"
-            />
-            <div className="w-11 h-6 bg-gray-200 peer-focus:ring-2 peer-focus:ring-sky-500 rounded-full peer peer-checked:bg-sky-500 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-5" />
-          </label>
+          <Toggle on={essential} onChange={setEssential} />
         </div>
 
-        {/* Activities — hidden when essential */}
         {!essential && (
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Activities</label>
-            <p className="text-xs text-gray-400 mb-2">
+            <p className="text-[13px] font-medium mb-1" style={{ color: 'var(--zi-text)' }}>Activities</p>
+            <p className="text-xs mb-2" style={{ color: 'var(--zi-text-subtle)' }}>
               This item will appear in packing lists for trips with these activities.
             </p>
             <div className="flex flex-wrap gap-2">
-              {activities.map((a) => {
-                const selected = selectedActivityIds.includes(a.id);
-                return (
-                  <button
-                    key={a.id}
-                    onClick={() => toggleActivity(a.id)}
-                    className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${
-                      selected
-                        ? 'bg-sky-500 text-white border-sky-500 shadow-sky-sm'
-                        : 'bg-white text-gray-600 border-gray-300'
-                    }`}
-                  >
-                    {a.name}
-                  </button>
-                );
-              })}
+              {activities.map((a) => (
+                <Chip key={a.id} selected={selectedActivityIds.includes(a.id)} onClick={() => toggleActivity(a.id)}>{a.name}</Chip>
+              ))}
             </div>
-
-            {/* Inline new activity form */}
             {showNewActivity ? (
-              <div className="mt-3">
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={newActivityName}
-                    onChange={(e) => setNewActivityName(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && addActivity()}
-                    placeholder="Activity name"
-                    autoFocus
-                    className="flex-1 border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
-                  />
-                  <button
-                    onClick={addActivity}
-                    disabled={addingActivity}
-                    className="px-3 py-2 bg-gradient-to-b from-sky-400 to-sky-600 text-white text-sm font-medium rounded-xl disabled:opacity-40 shadow-sky-sm"
-                  >
-                    {addingActivity ? 'Adding…' : 'Add'}
-                  </button>
-                  <button
-                    onClick={() => { setShowNewActivity(false); setNewActivityName(''); setActivityError(''); }}
-                    className="px-3 py-2 text-sm text-gray-500 border border-gray-300 rounded-xl"
-                  >
-                    Cancel
-                  </button>
-                </div>
-                {activityError && (
-                  <p className="text-xs text-red-500 mt-1">{activityError}</p>
-                )}
+              <div className="mt-3 flex gap-2">
+                <input
+                  type="text"
+                  value={newActivityName}
+                  onChange={(e) => setNewActivityName(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && addActivity()}
+                  placeholder="Activity name"
+                  autoFocus
+                  className="flex-1 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[var(--zi-brand)]"
+                  style={{ border: '1px solid var(--zi-border-strong)', borderRadius: 'var(--zi-r-lg)' }}
+                />
+                <SecondaryBtn onClick={addActivity} disabled={addingActivity}>{addingActivity ? '…' : 'Add'}</SecondaryBtn>
+                <SecondaryBtn onClick={() => { setShowNewActivity(false); setNewActivityName(''); setActivityError(''); }}>Cancel</SecondaryBtn>
+                {activityError && <p className="text-xs mt-1" style={{ color: 'var(--zi-danger)' }}>{activityError}</p>}
               </div>
             ) : (
-              <button
-                onClick={() => setShowNewActivity(true)}
-                className="mt-2 text-sm text-sky-500 font-medium"
-              >
+              <button type="button" onClick={() => setShowNewActivity(true)} className="mt-2 text-sm font-medium" style={{ color: 'var(--zi-brand)' }}>
                 + New activity
               </button>
             )}
           </div>
         )}
 
-        {/* Error */}
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-xl px-3 py-2">
-            <p className="text-sm text-red-600">{error}</p>
-          </div>
+          <p className="text-sm px-3 py-2 rounded-[var(--zi-r-lg)]" style={{ background: 'var(--zi-danger-tint)', color: 'var(--zi-danger)', border: '1px solid rgba(239,68,68,.2)' }}>
+            {error}
+          </p>
         )}
 
-        {/* Save button */}
-        <button
-          onClick={handleSave}
-          disabled={saving}
-          className="w-full bg-gradient-to-b from-sky-400 to-sky-600 text-white font-semibold py-4 rounded-xl disabled:opacity-50 shadow-sky mt-2"
-        >
-          {saving ? 'Saving…' : 'Save Item'}
-        </button>
+        <PrimaryBtn onClick={handleSave} disabled={saving} full className="mt-2 py-4">
+          {saving ? 'Saving…' : 'Save item'}
+        </PrimaryBtn>
       </div>
     </div>
   );

@@ -1,7 +1,7 @@
 import SuitcaseIcon from './SuitcaseIcon';
 
 type Size = 'sm' | 'md' | 'lg';
-type ColorScheme = 'brand' | 'dark';
+type ColorScheme = 'brand' | 'dark' | 'white';
 
 interface AppLogoProps {
   size?: Size;
@@ -17,6 +17,7 @@ const sizeConfig: Record<Size, { textClass: string }> = {
 const colorClass: Record<ColorScheme, string> = {
   brand: 'text-sky-500',
   dark: 'text-gray-900',
+  white: 'text-white',
 };
 
 export default function AppLogo({ size = 'md', colorScheme = 'brand' }: AppLogoProps) {

@@ -7,6 +7,9 @@ import type { Trip } from '@/types';
 import LuggageSpinner from '@/components/LuggageSpinner';
 import SuitcaseIcon from '@/components/SuitcaseIcon';
 import AppLogo from '@/components/AppLogo';
+import { PageHeader, HeaderIconBtn } from '@/components/ui/PageHeader';
+import { TripCard } from '@/components/ui/TripCard';
+import { PrimaryBtn } from '@/components/ui/Button';
 
 type TripWithProgress = Trip & {
   packing_list_entries: { id: string; packed: boolean }[];
@@ -52,45 +55,35 @@ export default function HomePage() {
   return (
     <div className="flex flex-col min-h-full">
       {/* Header */}
-      <div className="header-noise flex items-center justify-between px-4 pt-12 pb-4 bg-gradient-to-b from-sky-50 to-white">
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => router.push('/settings')}
-            aria-label="Settings"
-            className="w-10 h-10 flex items-center justify-center rounded-full border border-sky-200 text-sky-400 hover:border-sky-400 hover:text-sky-500 transition-colors bg-white/60"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <PageHeader
+        leading={
+          <h1><AppLogo size="md" colorScheme="white" /></h1>
+        }
+        trailing={
+          <HeaderIconBtn onClick={() => router.push('/settings')} aria-label="Settings">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="12" cy="8" r="4" />
               <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
             </svg>
-          </button>
-          <h1><AppLogo size="md" colorScheme="brand" /></h1>
-        </div>
-        <button
-          onClick={() => router.push('/trip/create')}
-          className="bg-gradient-to-b from-sky-400 to-sky-600 text-white text-sm font-semibold px-4 py-2 rounded-full shadow-sky-sm"
-        >
-          + New Trip
-        </button>
-      </div>
+          </HeaderIconBtn>
+        }
+      />
 
       {/* Content */}
       {trips.length === 0 ? (
         <div className="flex-1 flex flex-col items-center justify-center px-6 text-center gap-4">
           <SuitcaseIcon size={48} className="text-sky-500" />
-          <h2 className="text-xl font-semibold text-gray-800">No trips yet</h2>
-          <p className="text-gray-500 text-sm">
-            Create your first trip to generate a packing list, or head to Inventory to add items.
+          <h2 className="text-xl font-semibold" style={{ color: 'var(--zi-text)' }}>No trips yet</h2>
+          <p className="text-sm" style={{ color: 'var(--zi-text-muted)' }}>
+            Create your first trip to generate a packing list, or head to My stuff to add items.
           </p>
-          <button
-            onClick={() => router.push('/trip/create')}
-            className="mt-2 bg-gradient-to-b from-sky-400 to-sky-600 text-white font-semibold px-6 py-3 rounded-xl shadow-sky-sm"
-          >
-            Create Your First Trip
-          </button>
+          <PrimaryBtn onClick={() => router.push('/trip/create')} className="mt-2">
+            New trip
+          </PrimaryBtn>
           <button
             onClick={() => router.push('/trips/history')}
-            className="text-sm text-gray-400"
+            className="text-sm"
+            style={{ color: 'var(--zi-text-subtle)' }}
           >
             Past trips →
           </button>
@@ -100,47 +93,32 @@ export default function HomePage() {
           {trips.map((trip) => {
             const total = trip.packing_list_entries.length;
             const packed = trip.packing_list_entries.filter((e) => e.packed).length;
-            const progress = total > 0 ? Math.round((packed / total) * 100) : 0;
 
             return (
-              <button
+              <TripCard
                 key={trip.id}
+                name={trip.name}
+                dates={`${formatDate(trip.start_date)} — ${formatDate(trip.end_date)}`}
+                destination={trip.destination ?? undefined}
+                packed={packed}
+                total={total}
                 onClick={() => router.push(`/trip/${trip.id}`)}
-                className="w-full text-left bg-white rounded-2xl ring-1 ring-sky-100/60 p-4 shadow-sky"
-              >
-                <div className="flex items-start justify-between mb-3">
-                  <div>
-                    <h2 className="text-lg font-semibold text-gray-900">{trip.name}</h2>
-                    <p className="text-sm text-gray-500 mt-0.5">
-                      {formatDate(trip.start_date)} — {formatDate(trip.end_date)}
-                    </p>
-                  </div>
-                  <span className="text-sky-400 text-xl">›</span>
-                </div>
-
-                {/* Progress bar */}
-                <div className="flex items-center gap-2">
-                  <div className="flex-1 bg-gray-100 rounded-full h-1.5">
-                    <div
-                      className="bg-gradient-to-r from-sky-400 to-sky-500 h-1.5 rounded-full transition-all"
-                      style={{ width: `${progress}%` }}
-                    />
-                  </div>
-                  <span className="text-xs text-gray-400 whitespace-nowrap">
-                    {packed} / {total} packed
-                  </span>
-                </div>
-              </button>
+              />
             );
           })}
 
-          {/* Past trips link */}
-          <button
-            onClick={() => router.push('/trips/history')}
-            className="w-full text-center text-sm text-gray-400 py-3"
-          >
-            Past trips →
-          </button>
+          <div className="flex items-center justify-between pt-2 pb-1">
+            <button
+              onClick={() => router.push('/trips/history')}
+              className="text-sm"
+              style={{ color: 'var(--zi-text-subtle)' }}
+            >
+              Past trips →
+            </button>
+            <PrimaryBtn onClick={() => router.push('/trip/create')}>
+              + New trip
+            </PrimaryBtn>
+          </div>
         </div>
       )}
     </div>
