@@ -10,6 +10,7 @@ import AppLogo from '@/components/AppLogo';
 import { PageHeader, HeaderIconBtn } from '@/components/ui/PageHeader';
 import { TripCard } from '@/components/ui/TripCard';
 import { PrimaryBtn } from '@/components/ui/Button';
+import PWAInstallBanner from '@/components/PWAInstallBanner';
 
 type TripWithProgress = Trip & {
   packing_list_entries: { id: string; packed: boolean }[];
@@ -68,6 +69,8 @@ export default function HomePage() {
           </HeaderIconBtn>
         }
       />
+
+      <PWAInstallBanner />
 
       {/* Content */}
       {trips.length === 0 ? (
