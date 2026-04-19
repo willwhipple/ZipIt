@@ -58,14 +58,15 @@ export default function PWAInstallBanner() {
   async function handleInstall() {
     if (isIOS) {
       setShowIOSHint(true);
+      // Mark as shown — can't detect when user completes the iOS flow
+      localStorage.setItem(DISMISSED_KEY, 'true');
       return;
     }
     if (!deferredPrompt) return;
     await deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
-    if (outcome === 'accepted') {
-      localStorage.setItem(DISMISSED_KEY, 'true');
-    }
+    // Dismiss regardless of outcome — don't re-prompt after they've seen the native dialog
+    localStorage.setItem(DISMISSED_KEY, 'true');
     setShow(false);
   }
 
@@ -119,7 +120,7 @@ export default function PWAInstallBanner() {
       {showIOSHint ? (
         <p className="text-xs px-1" style={{ color: 'var(--zi-text-muted)' }}>
           {isChromeIOS ? (
-            <>Tap the <strong>⋯</strong> menu in Chrome, then choose <strong>Add to Home Screen</strong>.</>
+            <>Tap the <strong>Share</strong> button <span style={{ fontSize: 13 }}>⎙</span> in Chrome, then choose <strong>Add to Home Screen</strong>.</>
           ) : (
             <>Tap the <strong>Share</strong> button <span style={{ fontSize: 13 }}>⎙</span> in Safari, then choose <strong>Add to Home Screen</strong>.</>
           )}
