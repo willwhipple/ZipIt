@@ -652,9 +652,9 @@ export default function PackingListPage() {
                 : null;
               const windUnit = tempUnit === 'fahrenheit' ? 'mph' : 'km/h';
               const parts: string[] = [`${weather.emoji} ${lo}–${hi}${unit}`];
-              if (!weather.isClimatology && weather.precipProbability != null) parts.push(`${weather.precipProbability}% rain`);
-              else if (weather.isClimatology && weather.precipMm != null) parts.push(`~${weather.precipMm}mm`);
-              if (windSpeed != null) parts.push(`${windSpeed} ${windUnit}`);
+              if (!weather.isClimatology && weather.precipProbability != null) parts.push(`🌧️ ${weather.precipProbability}% rain`);
+              else if (weather.isClimatology && weather.precipMm != null) parts.push(`🌧️ ~${weather.precipMm}mm`);
+              if (windSpeed != null) parts.push(`💨 ${windSpeed} ${windUnit}`);
               return <MetaChip>{parts.join(' · ')}</MetaChip>;
             })()}
           </>

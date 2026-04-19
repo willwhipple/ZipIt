@@ -69,38 +69,42 @@ interface PageHeaderProps {
 }
 
 export function PageHeader({ leading, trailing, eyebrow, title, chips, className = '' }: PageHeaderProps) {
+  const hasChipsOrEyebrow = eyebrow != null || chips != null;
   return (
-    <div className={`zi-header header-noise px-4 pt-[10px] pb-[18px] ${className}`}>
-      {(leading != null || trailing != null) && (
-        <div className="flex items-center justify-between mb-[18px]">
-          <div>{leading}</div>
-          <div className="flex items-center gap-1.5">{trailing}</div>
-        </div>
-      )}
+    <div className={`zi-header header-noise px-4 pt-[10px] ${hasChipsOrEyebrow ? 'pb-[16px]' : 'pb-[10px]'} ${className}`}>
+      {/* Single inline row: back button · title (flex-1, truncates) · trailing actions */}
+      <div className="flex items-center min-h-[40px] gap-3">
+        {leading != null && <div className="flex-shrink-0">{leading}</div>}
+        {title != null && (
+          <div
+            className="flex-1 min-w-0 truncate"
+            style={{
+              fontSize: 20,
+              fontWeight: 700,
+              letterSpacing: -0.5,
+              lineHeight: 1.1,
+              color: '#fff',
+            }}
+          >
+            {title}
+          </div>
+        )}
+        {/* spacer keeps trailing pinned right when there's no title */}
+        {title == null && <div className="flex-1" />}
+        {trailing != null && (
+          <div className="flex items-center gap-1.5 flex-shrink-0">{trailing}</div>
+        )}
+      </div>
       {eyebrow && (
         <div
-          className="mb-1"
+          className="mt-2"
           style={{ fontSize: 11, fontWeight: 500, color: 'rgba(255,255,255,.7)' }}
         >
           {eyebrow}
         </div>
       )}
-      {title && (
-        <div
-          className={chips ? 'mb-[14px]' : ''}
-          style={{
-            fontSize: 28,
-            fontWeight: 700,
-            letterSpacing: -1,
-            lineHeight: 1.05,
-            color: '#fff',
-          }}
-        >
-          {title}
-        </div>
-      )}
       {chips && (
-        <div className="flex flex-wrap gap-2">{chips}</div>
+        <div className="flex flex-wrap gap-2 mt-[10px]">{chips}</div>
       )}
     </div>
   );
