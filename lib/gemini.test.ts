@@ -44,10 +44,6 @@ describe('buildTripContext', () => {
     expect(buildTripContext(baseTrip, [])).toContain('Activities: None');
   });
 
-  it('includes accommodation type', () => {
-    expect(buildTripContext(baseTrip, [])).toContain('Hotel');
-  });
-
   it('shows carry-on and laundry flags correctly', () => {
     const ctx1 = buildTripContext({ ...baseTrip, carry_on_only: true, laundry_available: true }, []);
     expect(ctx1).toContain('Carry-on only: Yes');
@@ -184,7 +180,7 @@ describe('parseInventorySuggestions — valid input', () => {
     ]);
     const result = parseInventorySuggestions(raw);
     expect(result).toHaveLength(2);
-    expect(result[0]).toEqual({ name: 'Passport', category: 'Accessories', quantityType: 'fixed', reason: 'Always required.' });
+    expect(result[0]).toEqual({ name: 'Passport', category: 'Accessories', quantityType: 'fixed', reason: 'Always required.', activities: [] });
     expect(result[1].quantityType).toBe('per_night');
   });
 
@@ -226,7 +222,6 @@ describe('parseTripDescription — valid input', () => {
       startDate: '2025-09-12',
       endDate: '2025-09-15',
       activities: ['Casual', 'City Sightseeing'],
-      accommodationType: 'Hotel',
       carryOnOnly: true,
       laundryAvailable: false,
     });
@@ -236,7 +231,6 @@ describe('parseTripDescription — valid input', () => {
     expect(result.startDate).toBe('2025-09-12');
     expect(result.endDate).toBe('2025-09-15');
     expect(result.activities).toEqual(['Casual', 'City Sightseeing']);
-    expect(result.accommodationType).toBe('Hotel');
     expect(result.carryOnOnly).toBe(true);
     expect(result.laundryAvailable).toBe(false);
   });
@@ -270,18 +264,6 @@ describe('parseTripDescription — validation', () => {
     expect(result.endDate).toBeUndefined();
   });
 
-  it('rejects invalid accommodationType', () => {
-    const raw = JSON.stringify({ accommodationType: 'Hostel' });
-    expect(parseTripDescription(raw).accommodationType).toBeUndefined();
-  });
-
-  it('accepts all valid accommodationType values', () => {
-    for (const type of ['Hotel', 'Airbnb', 'Camping', 'Staying with someone', 'Other']) {
-      const raw = JSON.stringify({ accommodationType: type });
-      expect(parseTripDescription(raw).accommodationType).toBe(type);
-    }
-  });
-
   it('rejects empty name and destination strings', () => {
     const raw = JSON.stringify({ name: '', destination: '  ' });
     const result = parseTripDescription(raw);
@@ -305,5 +287,47 @@ describe('parseTripDescription — malformed input', () => {
     expect(parseTripDescription('[]')).toEqual({});
     expect(parseTripDescription('null')).toEqual({});
     expect(parseTripDescription('"string"')).toEqual({});
+  });
+});
+
+// ── parseInventorySuggestions — parse_packing_list usage ─────────────────────
+// The parse_packing_list API action uses parseInventorySuggestions to parse its
+// response, so these tests cover the full response-validation path.
+
+describe('parseInventorySuggestions — parse_packing_list response format', () => {
+  it('parses items extracted from a packing list with activities', () => {
+    const raw = JSON.stringify([
+      { name: 'Hiking Boots', category: 'Shoes', quantityType: 'fixed', activities: ['Hiking'], reason: 'Essential for trails.' },
+      { name: 'Passport', category: 'Accessories', quantityType: 'fixed', activities: [], reason: 'Always required.' },
+    ]);
+    const result = parseInventorySuggestions(raw);
+    expect(result).toHaveLength(2);
+    expect(result[0]).toEqual({
+      name: 'Hiking Boots', category: 'Shoes', quantityType: 'fixed',
+      activities: ['Hiking'], reason: 'Essential for trails.',
+    });
+    expect(result[1].activities).toEqual([]);
+  });
+
+  it('filters out activities that are not strings', () => {
+    const raw = JSON.stringify([
+      { name: 'Sunscreen', category: 'Toiletries', quantityType: 'fixed', activities: ['Beach', 42, null], reason: 'Sun protection.' },
+    ]);
+    const result = parseInventorySuggestions(raw);
+    expect(result[0].activities).toEqual(['Beach']);
+  });
+
+  it('treats missing activities field as empty array', () => {
+    const raw = JSON.stringify([
+      { name: 'Toothbrush', category: 'Toiletries', quantityType: 'fixed', reason: 'Dental hygiene.' },
+    ]);
+    const result = parseInventorySuggestions(raw);
+    expect(result[0].activities).toEqual([]);
+  });
+
+  it('returns [] for completely malformed input', () => {
+    expect(parseInventorySuggestions('not json')).toEqual([]);
+    expect(parseInventorySuggestions('null')).toEqual([]);
+    expect(parseInventorySuggestions('"string"')).toEqual([]);
   });
 });

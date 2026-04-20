@@ -4,7 +4,9 @@ import { describe, it, expect, vi } from 'vitest';
 // Mock it so the pure utility exports can be imported without a real DB connection.
 vi.mock('./supabase', () => ({ supabase: {} }));
 
-import { calculateQuantity, daysBetween, LAUNDRY_CAP } from './generation';
+import { calculateQuantity, daysBetween, LAUNDRY_CAP_MAP } from './generation';
+
+const LAUNDRY_CAP = LAUNDRY_CAP_MAP.moderate;
 
 // ── calculateQuantity ─────────────────────────────────────────────────────────
 

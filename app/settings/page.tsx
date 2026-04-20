@@ -156,6 +156,14 @@ export default function SettingsPage() {
           {saved ? 'Saved!' : saving ? 'Saving…' : 'Save preferences'}
         </PrimaryBtn>
 
+        <button
+          onClick={() => router.push('/onboarding?redo=true')}
+          className="w-full py-3 text-sm font-medium"
+          style={{ color: 'var(--zi-brand)', border: '1px solid var(--zi-brand)', borderRadius: 'var(--zi-r-lg)' }}
+        >
+          Redo setup
+        </button>
+
         <DangerBtn
           onClick={async () => {
             await supabase.auth.signOut();

@@ -96,6 +96,38 @@ export async function askGemini(prompt: string): Promise<string> {
   }
 }
 
+/**
+ * Like askGemini but accepts an optional binary file (image or PDF) alongside the text prompt.
+ * Uses the Gemini multimodal API (inline data parts).
+ */
+export async function askGeminiMultimodal(
+  prompt: string,
+  inlineData?: { data: string; mimeType: string }
+): Promise<string> {
+  const model = getModel();
+
+  const timeoutPromise = new Promise<never>((_, reject) =>
+    setTimeout(() => reject(new GeminiError('Gemini request timed out')), TIMEOUT_MS)
+  );
+
+  type Part = { text: string } | { inlineData: { data: string; mimeType: string } };
+  const parts: Part[] = [{ text: prompt }];
+  if (inlineData) parts.push({ inlineData });
+
+  try {
+    const result = await Promise.race([
+      model.generateContent(parts),
+      timeoutPromise,
+    ]);
+    const text = result.response.text();
+    if (!text) throw new GeminiError('Gemini returned an empty response');
+    return text;
+  } catch (err) {
+    if (err instanceof GeminiError) throw err;
+    throw new GeminiError('Gemini request failed', err);
+  }
+}
+
 // ── Response parsers ──────────────────────────────────────────────────────────
 
 const VALID_CATEGORIES = new Set<string>([

@@ -3,6 +3,7 @@ import { createClient } from '../../../lib/supabase/server';
 import {
   buildTripContext,
   askGemini,
+  askGeminiMultimodal,
   parseSuggestions,
   parseInventorySuggestions,
   parseTripDescription,
@@ -32,10 +33,19 @@ type SuggestInventoryItemsRequest = {
   activityNames?: string[];     // available activity names — AI picks which apply to each item
 };
 
+type ParsePackingListRequest = {
+  action: 'parse_packing_list';
+  text?: string;        // plain text content
+  fileData?: string;    // base64 encoded (no data URI prefix)
+  mimeType?: string;    // e.g. 'image/jpeg', 'application/pdf'
+  activityNames: string[];
+};
+
 type AiRequest =
   | SuggestItemsRequest
   | ParseTripDescriptionRequest
-  | SuggestInventoryItemsRequest;
+  | SuggestInventoryItemsRequest
+  | ParsePackingListRequest;
 
 function parseRequest(body: unknown): AiRequest | null {
   if (body === null || typeof body !== 'object') return null;
@@ -68,6 +78,17 @@ function parseRequest(body: unknown): AiRequest | null {
     return { action: 'suggest_inventory_items', aboutMe, extraContext, existingItemNames, activityNames };
   }
 
+  if (b.action === 'parse_packing_list') {
+    const text = typeof b.text === 'string' && b.text.trim() ? b.text.trim() : undefined;
+    const fileData = typeof b.fileData === 'string' && b.fileData.trim() ? b.fileData.trim() : undefined;
+    const mimeType = typeof b.mimeType === 'string' && b.mimeType.trim() ? b.mimeType.trim() : undefined;
+    const activityNames = Array.isArray(b.activityNames)
+      ? b.activityNames.filter((x): x is string => typeof x === 'string')
+      : [];
+    if (!text && !fileData) return null; // must have at least one input
+    return { action: 'parse_packing_list', text, fileData, mimeType, activityNames };
+  }
+
   return null;
 }
 
@@ -95,6 +116,7 @@ export async function POST(req: NextRequest) {
   if (parsed.action === 'suggest_items') return handleSuggestItems(parsed);
   if (parsed.action === 'parse_trip_description') return handleParseTripDescription(parsed);
   if (parsed.action === 'suggest_inventory_items') return handleSuggestInventoryItems(parsed);
+  if (parsed.action === 'parse_packing_list') return handleParsePackingList(parsed);
 
   return NextResponse.json({ error: 'Unknown action' }, { status: 400 });
 }
@@ -256,4 +278,51 @@ ${existingList}`;
   if (!text) return NextResponse.json({ error }, { status });
 
   return NextResponse.json({ suggestions: parseInventorySuggestions(text) });
+}
+
+// ── parse_packing_list ────────────────────────────────────────────────────────
+
+async function handleParsePackingList(req: ParsePackingListRequest) {
+  const availableActivities = req.activityNames.length
+    ? req.activityNames.join(', ')
+    : 'None';
+
+  const prompt = `You are a packing list parser. Extract all packing items from the content below and return them in this exact JSON shape:
+[{ "name": string, "category": "Clothing"|"Shoes"|"Toiletries"|"Accessories"|"Equipment", "quantityType": "fixed"|"per_night"|"per_activity", "activities": string[], "reason": string }]
+
+quantityType guide:
+- "fixed"        → always pack exactly 1 (passport, laptop, charger)
+- "per_night"    → scales with trip length (socks, underwear, t-shirts)
+- "per_activity" → needed once per matching activity (golf glove, hiking boots)
+
+Map "activities" to a subset of these available activities: ${availableActivities}
+Use [] if the item is universal (passport, charger, etc.).
+Do not add explanatory text outside the JSON array.
+${req.text ? `\n--- CONTENT ---\n${req.text}` : ''}`;
+
+  let rawText: string | null = null;
+  let error: string | null = null;
+  let status = 200;
+
+  try {
+    const inlineData = req.fileData && req.mimeType
+      ? { data: req.fileData, mimeType: req.mimeType }
+      : undefined;
+    rawText = await askGeminiMultimodal(prompt, inlineData);
+  } catch (err) {
+    if (err instanceof GeminiError) {
+      const isTimeout = err.message.includes('timed out');
+      const isMisconfig = err.message.includes('not set');
+      console.error('[ai/route] Gemini error:', err.message, err.cause ?? '');
+      error = err.message;
+      status = isTimeout ? 504 : isMisconfig ? 500 : 503;
+    } else {
+      console.error('[ai/route] Unexpected error:', err);
+      error = 'AI unavailable';
+      status = 503;
+    }
+  }
+
+  if (!rawText) return NextResponse.json({ error }, { status });
+  return NextResponse.json({ suggestions: parseInventorySuggestions(rawText) });
 }

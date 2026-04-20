@@ -8,15 +8,16 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
 
   const isHome = pathname === '/';
   const isInventory = pathname.startsWith('/inventory') || pathname.startsWith('/activities');
+  const hideNav = pathname.startsWith('/onboarding');
 
   return (
     <div className="max-w-[430px] mx-auto min-h-dvh relative flex flex-col bg-white">
-      <main className="flex-1 pb-[88px]">
+      <main className={`flex-1 ${hideNav ? '' : 'pb-[88px]'}`}>
         {children}
       </main>
 
       {/* Bottom tab nav — iOS-style floating pill */}
-      <nav
+      {!hideNav && <nav
         className="fixed bottom-4 left-1/2 -translate-x-1/2 flex"
         style={{
           width: 'calc(100% - 130px)',
@@ -66,7 +67,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
           </svg>
           My stuff
         </Link>
-      </nav>
+      </nav>}
     </div>
   );
 }

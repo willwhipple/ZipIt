@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import type { Item, Activity, CategoryType, QuantityType, InventorySuggestion } from '@/types';
 import LuggageSpinner from '@/components/LuggageSpinner';
+import OnboardingModal from '@/components/OnboardingModal';
 import SuitcaseIcon from '@/components/SuitcaseIcon';
 import { PageHeader, HeaderIconBtn } from '@/components/ui/PageHeader';
 import { CategoryHeader, ListRow } from '@/components/ui/ListRow';
@@ -50,6 +51,9 @@ export default function InventoryPage() {
 
   // Activities (loaded on mount — needed for AI call and edit form)
   const [activities, setActivities] = useState<Activity[]>([]);
+
+  // Session-level flag: once user dismisses the onboarding modal, don't re-show this session
+  const [sessionOnboardingDismissed, setSessionOnboardingDismissed] = useState(false);
 
   // Inline edit form within the AI modal
   const [editingSuggestion, setEditingSuggestion] = useState<InventorySuggestion | null>(null);
@@ -299,6 +303,14 @@ export default function InventoryPage() {
           <div style={{ height: 1, background: 'var(--zi-border)', margin: '0 20px' }} />
         </div>
       ))}
+
+      {/* Onboarding modal — shown once per session when inventory is sparse */}
+      {!loading && items.length < 10 && !sessionOnboardingDismissed && (
+        <OnboardingModal
+          onDismiss={() => setSessionOnboardingDismissed(true)}
+          onComplete={() => { setSessionOnboardingDismissed(true); fetchItems(); }}
+        />
+      )}
 
       {/* Smart Suggestions sheet */}
       {showAIPrefill && (

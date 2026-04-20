@@ -84,6 +84,7 @@ export type UserPreferences = {
   temperature_unit: TemperatureUnit;
   laundry_style: LaundryStyle;
   about_me: string | null;
+  onboarding_completed: boolean;
   created_at: string;
   updated_at: string;
 };

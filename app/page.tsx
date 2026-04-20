@@ -23,20 +23,29 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchTrips();
+    init();
   }, []);
 
-  async function fetchTrips() {
+  async function init() {
     setLoading(true);
     const today = new Date().toISOString().split('T')[0];
-    const { data, error } = await supabase
-      .from('trips')
-      .select('*, packing_list_entries(id, packed)')
-      .eq('archived', false)
-      .gte('end_date', today)
-      .order('start_date', { ascending: true });
 
-    if (!error && data) setTrips(data as TripWithProgress[]);
+    const [prefsResult, tripsResult] = await Promise.all([
+      supabase.from('user_preferences').select('onboarding_completed').limit(1).maybeSingle(),
+      supabase
+        .from('trips')
+        .select('*, packing_list_entries(id, packed)')
+        .eq('archived', false)
+        .gte('end_date', today)
+        .order('start_date', { ascending: true }),
+    ]);
+
+    if (prefsResult.data && !prefsResult.data.onboarding_completed) {
+      router.replace('/onboarding');
+      return;
+    }
+
+    if (!tripsResult.error && tripsResult.data) setTrips(tripsResult.data as TripWithProgress[]);
     setLoading(false);
   }
 
