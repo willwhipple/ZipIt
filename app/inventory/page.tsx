@@ -265,7 +265,7 @@ export default function InventoryPage() {
           <div className="text-4xl">📦</div>
           <h2 className="text-lg font-semibold" style={{ color: 'var(--zi-text)' }}>No items yet</h2>
           <p className="text-sm" style={{ color: 'var(--zi-text-muted)' }}>
-            Add items to your inventory so you can generate packing lists for trips.
+            Add items to My Stuff so you can generate packing lists for trips.
           </p>
           <PrimaryBtn onClick={() => router.push('/inventory/item/create')} className="mt-2">
             Add your first item
@@ -374,7 +374,7 @@ export default function InventoryPage() {
                     </div>
                   )}
                   <PrimaryBtn onClick={handleEditSave} disabled={savingEdit || !editName.trim()} full>
-                    {savingEdit ? 'Saving…' : 'Save & add to inventory'}
+                    {savingEdit ? 'Saving…' : 'Save & add to My Stuff'}
                   </PrimaryBtn>
                 </div>
               )}
@@ -410,7 +410,7 @@ export default function InventoryPage() {
               {!editingSuggestion && !aiPrefillLoading && inventorySuggestions.length > 0 && (
                 <>
                   <p className="text-xs" style={{ color: 'var(--zi-text-subtle)' }}>
-                    Tap Add to include an item in your inventory.
+                    Tap Add to include it in My Stuff.
                   </p>
                   {CATEGORY_ORDER.map((cat) => {
                     const catSuggestions = inventorySuggestions.filter((s) => s.category === cat);
@@ -463,7 +463,7 @@ export default function InventoryPage() {
             <div className="sheet-handle" />
             <h3 className="text-lg font-semibold mb-2" style={{ color: 'var(--zi-text)' }}>Delete item?</h3>
             <p className="text-sm mb-6" style={{ color: 'var(--zi-text-muted)' }}>
-              This will remove the item from your inventory. It won&apos;t affect existing packing lists.
+              This will remove the item from My Stuff. It won&apos;t affect existing packing lists.
             </p>
             <div className="flex flex-col gap-2">
               <DangerBtn onClick={() => deleteItem(deleteConfirm)} full>Delete</DangerBtn>
