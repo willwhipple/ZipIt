@@ -61,6 +61,7 @@ function OnboardingContent() {
   const [slideIndex, setSlideIndex] = useState(0);
 
   // Fetched on mount
+  const [userId, setUserId] = useState<string | null>(null);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [prefsId, setPrefsId] = useState<string | null>(null);
   const [aboutMe, setAboutMe] = useState('');
@@ -96,6 +97,9 @@ function OnboardingContent() {
 
   useEffect(() => {
     async function load() {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUserId(user?.id ?? null);
+
       const [actsResult, prefsResult] = await Promise.all([
         supabase.from('activities').select('*').order('name'),
         supabase.from('user_preferences').select('id, about_me, onboarding_completed').limit(1).maybeSingle(),
@@ -143,8 +147,8 @@ function OnboardingContent() {
     setAddingActivity(true);
     const { data, error } = await supabase
       .from('activities')
-      .insert({ name })
-      .select('id, name, created_at')
+      .insert({ name, user_id: userId })
+      .select('id, name, user_id, created_at')
       .single();
     if (!error && data) {
       setActivities((prev) => [...prev, data as Activity]);
@@ -281,7 +285,7 @@ function OnboardingContent() {
     for (const item of toInsert) {
       const { data: newItem, error } = await supabase
         .from('items')
-        .insert({ name: item.name, category: item.category, quantity_type: item.quantityType, essential: false })
+        .insert({ name: item.name, category: item.category, quantity_type: item.quantityType, essential: false, user_id: userId })
         .select('id')
         .single();
 

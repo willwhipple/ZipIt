@@ -34,6 +34,7 @@ export default function CreateTripPage() {
   const [laundryAvailable, setLaundryAvailable] = useState(false);
   const [selectedActivityIds, setSelectedActivityIds] = useState<string[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
+  const [userId, setUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -44,13 +45,13 @@ export default function CreateTripPage() {
   const [nlDone, setNlDone] = useState(false);
 
   useEffect(() => {
-    supabase
-      .from('activities')
-      .select('*')
-      .order('name')
-      .then(({ data }) => {
-        if (data) setActivities(data as Activity[]);
-      });
+    async function init() {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUserId(user?.id ?? null);
+      const { data } = await supabase.from('activities').select('*').order('name');
+      if (data) setActivities(data as Activity[]);
+    }
+    init();
   }, []);
 
   async function handleNLParse() {
@@ -149,6 +150,7 @@ export default function CreateTripPage() {
         end_date: finalEndDate,
         carry_on_only: carryOnOnly,
         laundry_available: laundryAvailable,
+        user_id: userId,
       })
       .select()
       .single();
