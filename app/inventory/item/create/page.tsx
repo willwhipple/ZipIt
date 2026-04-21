@@ -27,6 +27,7 @@ export default function CreateItemPage() {
   const [essential, setEssential] = useState(false);
   const [selectedActivityIds, setSelectedActivityIds] = useState<string[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
+  const [userId, setUserId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [showNewActivity, setShowNewActivity] = useState(false);
@@ -35,13 +36,13 @@ export default function CreateItemPage() {
   const [addingActivity, setAddingActivity] = useState(false);
 
   useEffect(() => {
-    supabase
-      .from('activities')
-      .select('*')
-      .order('name')
-      .then(({ data }) => {
-        if (data) setActivities(data as Activity[]);
-      });
+    async function init() {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUserId(user?.id ?? null);
+      const { data } = await supabase.from('activities').select('*').order('name');
+      if (data) setActivities(data as Activity[]);
+    }
+    init();
   }, []);
 
   function toggleActivity(id: string) {
@@ -57,7 +58,7 @@ export default function CreateItemPage() {
 
     const { data, error: insertError } = await supabase
       .from('activities')
-      .insert({ name: newActivityName.trim() })
+      .insert({ name: newActivityName.trim(), user_id: userId })
       .select()
       .single();
 
@@ -84,7 +85,7 @@ export default function CreateItemPage() {
 
     const { data: item, error: itemError } = await supabase
       .from('items')
-      .insert({ name: name.trim(), category, quantity_type: quantityType, essential })
+      .insert({ name: name.trim(), category, quantity_type: quantityType, essential, user_id: userId })
       .select()
       .single();
 

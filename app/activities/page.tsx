@@ -12,6 +12,7 @@ export default function ActivitiesPage() {
   const router = useRouter();
   const supabase = createClient();
 
+  const [userId, setUserId] = useState<string | null>(null);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
   const [newName, setNewName] = useState('');
@@ -28,7 +29,12 @@ export default function ActivitiesPage() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    fetchActivities();
+    async function init() {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUserId(user?.id ?? null);
+      await fetchActivities();
+    }
+    init();
   }, []);
 
   async function fetchActivities() {
@@ -46,7 +52,7 @@ export default function ActivitiesPage() {
     setAdding(true);
     const { data, error: insertError } = await supabase
       .from('activities')
-      .insert({ name: trimmed })
+      .insert({ name: trimmed, user_id: userId })
       .select()
       .single();
 

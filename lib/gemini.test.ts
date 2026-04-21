@@ -14,8 +14,8 @@ const baseTrip = {
 };
 
 const activities: Activity[] = [
-  { id: 'a1', name: 'Golf', created_at: '2024-01-01T00:00:00Z' },
-  { id: 'a2', name: 'Beach', created_at: '2024-01-01T00:00:00Z' },
+  { id: 'a1', name: 'Golf', user_id: 'u1', created_at: '2024-01-01T00:00:00Z' },
+  { id: 'a2', name: 'Beach', user_id: 'u1', created_at: '2024-01-01T00:00:00Z' },
 ];
 
 // ── buildTripContext ───────────────────────────────────────────────────────────

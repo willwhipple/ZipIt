@@ -19,6 +19,7 @@ export type QuantityType = 'fixed' | 'per_night' | 'per_activity';
 export type Activity = {
   id: string;
   name: string;
+  user_id: string;
   created_at: string;
 };
 
@@ -28,6 +29,7 @@ export type Item = {
   category: CategoryType;
   quantity_type: QuantityType;
   essential: boolean;
+  user_id: string;
   created_at: string;
 };
 
@@ -45,6 +47,7 @@ export type Trip = {
   carry_on_only: boolean;
   laundry_available: boolean;
   archived: boolean;
+  user_id: string;
   created_at: string;
 };
 
@@ -116,6 +119,17 @@ export type ParsedTripDescription = {
   activities?: string[];     // activity names
   carryOnOnly?: boolean;
   laundryAvailable?: boolean;
+};
+
+// A curated item from the system starter pack (read-only, not user-owned).
+// activity_names are resolved against the user's own activities at copy time.
+export type SystemItem = {
+  id: string;
+  name: string;
+  category: CategoryType;
+  quantity_type: QuantityType;
+  essential: boolean;
+  activity_names: string[];
 };
 
 // ── Composite types ────────────────────────────────────────────────────────────
