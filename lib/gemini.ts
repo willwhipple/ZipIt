@@ -37,7 +37,7 @@ function getModel() {
  */
 export function buildTripContext(
   trip: Pick<Trip, 'name' | 'start_date' | 'end_date' | 'carry_on_only' | 'laundry_available'>,
-  activities: Activity[],
+  activities: Pick<Activity, 'name'>[],
   weather?: string
 ): string {
   const nights = daysBetween(trip.start_date, trip.end_date);
