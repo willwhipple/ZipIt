@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import type { LaundryStyle, TemperatureUnit, UserPreferences } from '@/types';
+import { parseAboutMe, formatAboutMe } from '@/lib/aboutMe';
 import LuggageSpinner from '@/components/LuggageSpinner';
 import { PageHeader, HeaderIconBtn } from '@/components/ui/PageHeader';
 import { Textarea } from '@/components/ui/Input';
@@ -28,7 +29,9 @@ export default function SettingsPage() {
   // Local form state
   const [tempUnit, setTempUnit] = useState<TemperatureUnit>('celsius');
   const [laundryStyle, setLaundryStyle] = useState<LaundryStyle>('moderate');
-  const [aboutMe, setAboutMe] = useState('');
+  const [toiletries, setToiletries] = useState('');
+  const [medications, setMedications] = useState('');
+  const [travelNotes, setTravelNotes] = useState('');
 
   useEffect(() => {
     async function fetchPrefs() {
@@ -42,7 +45,10 @@ export default function SettingsPage() {
         setPrefs(data as UserPreferences);
         setTempUnit(data.temperature_unit as TemperatureUnit);
         setLaundryStyle(data.laundry_style as LaundryStyle);
-        setAboutMe(data.about_me ?? '');
+        const parsed = parseAboutMe(data.about_me ?? null);
+        setToiletries(parsed.toiletries);
+        setMedications(parsed.medications);
+        setTravelNotes(parsed.travelNotes);
       }
       setLoading(false);
     }
@@ -57,7 +63,7 @@ export default function SettingsPage() {
     const updates = {
       temperature_unit: tempUnit,
       laundry_style: laundryStyle,
-      about_me: aboutMe.trim() || null,
+      about_me: formatAboutMe({ toiletries, medications, travelNotes }) || null,
       updated_at: new Date().toISOString(),
     };
 
@@ -138,18 +144,40 @@ export default function SettingsPage() {
         </section>
 
         {/* About Me */}
-        <section>
-          <p className="text-[13px] font-medium mb-1" style={{ color: 'var(--zi-text)' }}>About me</p>
-          <p className="text-xs mb-3" style={{ color: 'var(--zi-text-subtle)' }}>
-            Any context about you that improves your Smart Suggestions — travel style,
-            preferences, things you always forget.
-          </p>
-          <Textarea
-            value={aboutMe}
-            onChange={setAboutMe}
-            placeholder="e.g. I run hot, always overpack shoes, and usually travel for work with one leisure day added on…"
-            rows={4}
-          />
+        <section className="flex flex-col gap-4">
+          <div>
+            <p className="text-[13px] font-medium mb-1" style={{ color: 'var(--zi-text)' }}>About me</p>
+            <p className="text-xs" style={{ color: 'var(--zi-text-subtle)' }}>
+              Helps Smart Suggestions personalise your packing list.
+            </p>
+          </div>
+          <div>
+            <p className="text-xs font-medium mb-1.5" style={{ color: 'var(--zi-text)' }}>Toiletries you always pack</p>
+            <Textarea
+              value={toiletries}
+              onChange={setToiletries}
+              placeholder="e.g. Nivea moisturiser, electric toothbrush"
+              rows={2}
+            />
+          </div>
+          <div>
+            <p className="text-xs font-medium mb-1.5" style={{ color: 'var(--zi-text)' }}>Medications or health items</p>
+            <Textarea
+              value={medications}
+              onChange={setMedications}
+              placeholder="e.g. antihistamines, inhaler, vitamins"
+              rows={2}
+            />
+          </div>
+          <div>
+            <p className="text-xs font-medium mb-1.5" style={{ color: 'var(--zi-text)' }}>Anything else about your travel style <span style={{ color: 'var(--zi-text-subtle)' }}>— optional</span></p>
+            <Textarea
+              value={travelNotes}
+              onChange={setTravelNotes}
+              placeholder="e.g. I always overpack shoes"
+              rows={2}
+            />
+          </div>
         </section>
 
         <PrimaryBtn onClick={handleSave} disabled={saving} full>

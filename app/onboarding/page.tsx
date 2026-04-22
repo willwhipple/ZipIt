@@ -1,9 +1,11 @@
 'use client';
 
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import type { Activity, CategoryType, InventorySuggestion, QuantityType } from '@/types';
+import { parseAboutMe, formatAboutMe } from '@/lib/aboutMe';
+import { generatePackingList } from '@/lib/generation';
 import SuitcaseIcon from '@/components/SuitcaseIcon';
 import { Chip } from '@/components/ui/Chip';
 import { Input } from '@/components/ui/Input';
@@ -21,30 +23,21 @@ const QUANTITY_TYPES: { value: QuantityType; label: string; description: string 
 
 const SLIDES = [
   {
-    emoji: '⭐',
-    heading: 'Essentials always pack',
-    body: 'Items marked essential appear on every trip, no matter what. Think passport, charger, toothbrush.',
+    emoji: '⚡',
+    heading: "Tell us your trip. We'll build your list.",
+    body: 'Quick setup, curated templates, personalised by AI.',
   },
   {
-    emoji: '🏌️',
-    heading: 'Activities drive the rest',
-    body: "Tag items to activities like Golf or Beach. They'll only appear when that activity is on your trip.",
-  },
-  {
-    emoji: '📅',
-    heading: 'Duration scales quantities',
-    body: "Set socks to 'per night' and we'll calculate exactly how many to pack. No more counting on your fingers.",
-  },
-  {
-    emoji: '➕',
-    heading: 'Add as you go',
-    body: "Forget something? Add it directly from any packing list. We'll ask if you want it in your inventory for next time.",
+    emoji: '🏷️',
+    heading: 'Your list = essentials + activity gear',
+    body: "Items tagged to an activity only appear when that activity is on your trip. We'll show you how.",
   },
 ];
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-type Step = 'walkthrough' | 'about-me' | 'activities' | 'choose-path' | 'import' | 'review';
+type OnboardingPath = 'trip' | 'setup' | null;
+type Step = 'walkthrough' | 'path-choice' | 'trip-form' | 'about-me' | 'activities' | 'import' | 'loading' | 'review';
 type ImportTab = 'upload' | 'paste';
 
 // ── Main component (wrapped in Suspense for useSearchParams) ─────────────────
@@ -53,31 +46,38 @@ function OnboardingContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const isRedo = searchParams.get('redo') === 'true';
+  const generationRan = useRef(false);
 
   const supabase = createClient();
 
   // Step machine
-  const [step, setStep] = useState<Step>('walkthrough');
+  const [step, setStep] = useState<Step>(isRedo ? 'path-choice' : 'walkthrough');
   const [slideIndex, setSlideIndex] = useState(0);
+  const [path, setPath] = useState<OnboardingPath>(null);
 
   // Fetched on mount
   const [userId, setUserId] = useState<string | null>(null);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [prefsId, setPrefsId] = useState<string | null>(null);
-  const [aboutMe, setAboutMe] = useState('');
   const [initDone, setInitDone] = useState(false);
 
-  // About me step
-  const [aboutMeInput, setAboutMeInput] = useState('');
+  // Structured About Me (shared between about-me step and settings)
+  const [toiletries, setToiletries] = useState('');
+  const [medications, setMedications] = useState('');
+  const [travelNotes, setTravelNotes] = useState('');
 
-  // Activities step — names of activities the user selects
+  // Path A — trip form
+  const [tripName, setTripName] = useState('');
+  const [tripDestination, setTripDestination] = useState('');
+  const [tripStartDate, setTripStartDate] = useState('');
+  const [tripNights, setTripNights] = useState('1');
+  const [tripActivityNames, setTripActivityNames] = useState<string[]>([]);
+  const [tripFormError, setTripFormError] = useState('');
+
+  // Path B — activities step
   const [selectedActivityNames, setSelectedActivityNames] = useState<string[]>([]);
   const [newActivityInput, setNewActivityInput] = useState('');
   const [addingActivity, setAddingActivity] = useState(false);
-
-  // AI generate
-  const [aiLoading, setAiLoading] = useState(false);
-  const [aiError, setAiError] = useState('');
 
   // Import
   const [importTab, setImportTab] = useState<ImportTab>('upload');
@@ -85,6 +85,10 @@ function OnboardingContent() {
   const [pasteText, setPasteText] = useState('');
   const [importLoading, setImportLoading] = useState(false);
   const [importError, setImportError] = useState('');
+  const [importedItems, setImportedItems] = useState<InventorySuggestion[]>([]);
+
+  // Loading / generation
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   // Review
   const [reviewItems, setReviewItems] = useState<InventorySuggestion[]>([]);
@@ -105,15 +109,25 @@ function OnboardingContent() {
         supabase.from('user_preferences').select('id, about_me, onboarding_completed').limit(1).maybeSingle(),
       ]);
 
-      if (actsResult.data) setActivities(actsResult.data as Activity[]);
+      // If user has no activities (pre-trigger signup), seed the defaults now
+      if (actsResult.data && actsResult.data.length === 0 && user?.id) {
+        const defaults = ['Golf', 'Beach', 'Business', 'Hiking', 'Formal Dinner', 'Casual', 'Ski', 'City Sightseeing'];
+        const { data: seeded } = await supabase
+          .from('activities')
+          .insert(defaults.map((name) => ({ name, user_id: user.id })))
+          .select('id, name, user_id, created_at');
+        if (seeded) setActivities(seeded as Activity[]);
+      } else if (actsResult.data) {
+        setActivities(actsResult.data as Activity[]);
+      }
 
       if (prefsResult.data) {
         setPrefsId(prefsResult.data.id);
-        const existing = prefsResult.data.about_me ?? '';
-        setAboutMe(existing);
-        setAboutMeInput(existing);
+        const parsed = parseAboutMe(prefsResult.data.about_me ?? null);
+        setToiletries(parsed.toiletries);
+        setMedications(parsed.medications);
+        setTravelNotes(parsed.travelNotes);
 
-        // If already onboarded and not a redo, send them home
         if (prefsResult.data.onboarding_completed && !isRedo) {
           router.replace('/');
           return;
@@ -124,6 +138,14 @@ function OnboardingContent() {
     }
     load();
   }, []);
+
+  // Trigger AI generation exactly once when loading step is reached
+  useEffect(() => {
+    if (step === 'loading' && !generationRan.current) {
+      generationRan.current = true;
+      runGeneration();
+    }
+  }, [step]);
 
   // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -138,7 +160,6 @@ function OnboardingContent() {
     if (prefsId) {
       await supabase.from('user_preferences').update({ about_me: trimmed }).eq('id', prefsId);
     }
-    setAboutMe(trimmed ?? '');
   }
 
   async function addActivity() {
@@ -171,37 +192,56 @@ function OnboardingContent() {
     router.push('/inventory');
   }
 
-  // ── AI generate ────────────────────────────────────────────────────────────
+  // ── AI generation ──────────────────────────────────────────────────────────
 
-  async function handleGenerateAI() {
-    setAiLoading(true);
-    setAiError('');
+  async function runGeneration() {
+    const activityNames = path === 'trip' ? tripActivityNames : selectedActivityNames;
+
+    // Pull curated items from system_items — essential ones always included, activity-tagged ones filtered by selection
+    const { data: sysItems } = await supabase.from('system_items').select('*');
+    const relevant = (sysItems ?? []).filter((item) =>
+      item.essential || item.activity_names.some((n: string) => activityNames.includes(n))
+    );
+    const templateItems: InventorySuggestion[] = relevant.map((item) => ({
+      name: item.name,
+      category: item.category as CategoryType,
+      quantityType: item.quantity_type as QuantityType,
+      reason: '',
+      activities: item.activity_names as string[],
+    }));
+
+    const combinedItems = dedupByName([...templateItems, ...importedItems]);
+    const aboutMeText = formatAboutMe({ toiletries, medications, travelNotes });
+    const activitySet = new Set(activityNames);
+
     try {
       const res = await fetch('/api/ai', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'suggest_inventory_items',
-          aboutMe: aboutMe || undefined,
-          activityNames: selectedActivityNames.length > 0
-            ? selectedActivityNames
-            : activities.map((a) => a.name),
+          aboutMe: aboutMeText || undefined,
+          activityNames: activityNames.length > 0 ? activityNames : activities.map((a) => a.name),
+          existingItemNames: combinedItems.map((i) => i.name),
         }),
       });
       const data = await res.json();
-      if (!res.ok || data.error) {
-        setAiError("Couldn't get suggestions right now. Try again later.");
-      } else {
-        const items: InventorySuggestion[] = data.suggestions ?? [];
-        setReviewItems(items);
-        setCheckedNames(new Set(items.map((s) => s.name)));
-        setStep('review');
-      }
+      if (!res.ok || data.error) throw new Error();
+      const aiItems: InventorySuggestion[] = data.suggestions ?? [];
+      const finalItems = dedupByName([...combinedItems, ...aiItems]).filter((item) =>
+        item.activities.length === 0 || item.activities.some((a) => activitySet.has(a))
+      );
+      setReviewItems(finalItems);
+      setCheckedNames(new Set(finalItems.map((i) => i.name)));
     } catch {
-      setAiError("Couldn't get suggestions right now. Try again later.");
-    } finally {
-      setAiLoading(false);
+      const fallback = combinedItems.filter((item) =>
+        item.activities.length === 0 || item.activities.some((a) => activitySet.has(a))
+      );
+      setReviewItems(fallback);
+      setCheckedNames(new Set(fallback.map((i) => i.name)));
+      setLoadError('AI suggestions unavailable — showing curated list.');
     }
+    setStep('review');
   }
 
   // ── Import ─────────────────────────────────────────────────────────────────
@@ -234,14 +274,13 @@ function OnboardingContent() {
   }
 
   async function parseContent(payload: { text?: string; fileData?: string; mimeType?: string }) {
+    const activityNames = path === 'trip' ? tripActivityNames : selectedActivityNames;
     const res = await fetch('/api/ai', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         action: 'parse_packing_list',
-        activityNames: selectedActivityNames.length > 0
-          ? selectedActivityNames
-          : activities.map((a) => a.name),
+        activityNames: activityNames.length > 0 ? activityNames : activities.map((a) => a.name),
         ...payload,
       }),
     });
@@ -250,9 +289,8 @@ function OnboardingContent() {
       setImportError("Couldn't parse the list. Try pasting the text instead.");
     } else {
       const items: InventorySuggestion[] = data.suggestions ?? [];
-      setReviewItems(items);
-      setCheckedNames(new Set(items.map((s) => s.name)));
-      setStep('review');
+      setImportedItems(items);
+      setStep('loading');
     }
   }
 
@@ -285,7 +323,7 @@ function OnboardingContent() {
     for (const item of toInsert) {
       const { data: newItem, error } = await supabase
         .from('items')
-        .insert({ name: item.name, category: item.category, quantity_type: item.quantityType, essential: false, user_id: userId })
+        .insert({ name: item.name, category: item.category, quantity_type: item.quantityType, essential: item.activities.length === 0, user_id: userId })
         .select('id')
         .single();
 
@@ -296,6 +334,30 @@ function OnboardingContent() {
             activityIds.map((activity_id) => ({ item_id: newItem.id, activity_id }))
           );
         }
+      }
+    }
+
+    if (path === 'trip') {
+      const nights = Math.max(1, parseInt(tripNights, 10) || 1);
+      const endDate = computeEndDate(tripStartDate, nights);
+
+      const { data: newTrip } = await supabase
+        .from('trips')
+        .insert({ name: tripName, destination: tripDestination || null, start_date: tripStartDate, end_date: endDate, user_id: userId })
+        .select('id')
+        .single();
+
+      if (newTrip) {
+        const tripActivityIds = resolveActivityIds(tripActivityNames);
+        if (tripActivityIds.length > 0) {
+          await supabase.from('trip_activities').insert(
+            tripActivityIds.map((activity_id) => ({ trip_id: newTrip.id, activity_id }))
+          );
+        }
+        await generatePackingList(supabase, newTrip.id);
+        await markComplete();
+        router.push(`/trip/${newTrip.id}`);
+        return;
       }
     }
 
@@ -323,14 +385,12 @@ function OnboardingContent() {
       {/* ── Walkthrough ─────────────────────────────────────────────────────── */}
       {step === 'walkthrough' && (
         <div className="flex-1 flex flex-col">
-          {/* Skip */}
           <div className="flex justify-end px-5 pt-5 pb-0">
-            <button onClick={skip} className="text-sm font-medium" style={{ color: 'var(--zi-text-subtle)' }}>
+            <button onClick={() => setStep('path-choice')} className="text-sm font-medium" style={{ color: 'var(--zi-text-subtle)' }}>
               Skip
             </button>
           </div>
 
-          {/* Slide content */}
           <div className="flex-1 flex flex-col items-center justify-center px-8 text-center gap-6">
             <div
               className="flex items-center justify-center"
@@ -348,7 +408,6 @@ function OnboardingContent() {
             </div>
           </div>
 
-          {/* Progress dots + navigation */}
           <div className="flex flex-col items-center gap-6 px-6 pb-10">
             <div className="flex gap-2">
               {SLIDES.map((_, i) => (
@@ -379,50 +438,220 @@ function OnboardingContent() {
                   if (slideIndex < SLIDES.length - 1) {
                     setSlideIndex(slideIndex + 1);
                   } else {
-                    setStep('about-me');
+                    setStep('path-choice');
                   }
                 }}
               >
-                {slideIndex === SLIDES.length - 1 ? 'Get started' : 'Next'}
+                {slideIndex === SLIDES.length - 1 ? 'Get started →' : 'Next'}
               </PrimaryBtn>
             </div>
           </div>
         </div>
       )}
 
-      {/* ── About Me ────────────────────────────────────────────────────────── */}
-      {step === 'about-me' && (
+      {/* ── Path Choice ─────────────────────────────────────────────────────── */}
+      {step === 'path-choice' && (
         <div className="flex-1 flex flex-col px-6 pt-10 pb-10 gap-6">
           <div className="flex flex-col gap-2">
-            <h2 className="text-xl font-bold" style={{ color: 'var(--zi-text)' }}>Tell us about yourself</h2>
+            <h2 className="text-xl font-bold" style={{ color: 'var(--zi-text)' }}>Let&apos;s get you set up</h2>
             <p className="text-sm leading-relaxed" style={{ color: 'var(--zi-text-muted)' }}>
-              This helps Smart Suggestions give you a better starting inventory.
+              What would you like to do first?
             </p>
           </div>
 
-          <textarea
-            value={aboutMeInput}
-            onChange={(e) => setAboutMeInput(e.target.value)}
-            placeholder="e.g. I travel mostly for work with the occasional golf weekend. I always forget a travel adapter and tend to overpack shoes."
-            rows={5}
-            className="w-full px-3 py-2.5 text-sm resize-none outline-none"
-            style={{ border: '1px solid var(--zi-border-strong)', borderRadius: 'var(--zi-r-lg)' }}
-          />
+          <div className="flex flex-col gap-3">
+            <button
+              onClick={() => { setPath('trip'); setStep('trip-form'); }}
+              className="text-left p-5"
+              style={{ border: '1.5px solid var(--zi-brand)', borderRadius: 'var(--zi-r-lg)', background: 'var(--zi-brand-tint)' }}
+            >
+              <p className="text-base font-semibold mb-1.5" style={{ color: 'var(--zi-brand)' }}>
+                🧳 Packing for a trip right now?
+              </p>
+              <p className="text-sm" style={{ color: 'var(--zi-text-muted)' }}>
+                Tell us where you&apos;re headed and we&apos;ll build your list in 30 seconds.
+              </p>
+            </button>
+
+            <button
+              onClick={() => { setPath('setup'); setStep('about-me'); }}
+              className="text-left p-5"
+              style={{ border: '1.5px solid var(--zi-border-strong)', borderRadius: 'var(--zi-r-lg)' }}
+            >
+              <p className="text-base font-semibold mb-1.5" style={{ color: 'var(--zi-text)' }}>
+                📋 Just setting up
+              </p>
+              <p className="text-sm" style={{ color: 'var(--zi-text-muted)' }}>
+                Build your My Stuff list now and create trips whenever you&apos;re ready.
+              </p>
+            </button>
+          </div>
 
           <div className="flex-1" />
+
+          <button onClick={skip} className="text-sm font-medium py-2 text-center" style={{ color: 'var(--zi-text-subtle)' }}>
+            Skip for now
+          </button>
+        </div>
+      )}
+
+      {/* ── Trip Form (Path A) ──────────────────────────────────────────────── */}
+      {step === 'trip-form' && (
+        <div className="flex-1 flex flex-col px-6 pt-8 pb-10 gap-5">
+          <button onClick={() => setStep('path-choice')} className="text-sm font-medium self-start" style={{ color: 'var(--zi-brand)' }}>
+            ← Back
+          </button>
+
+          <div className="flex flex-col gap-1">
+            <h2 className="text-xl font-bold" style={{ color: 'var(--zi-text)' }}>Tell us about your trip</h2>
+            <p className="text-sm" style={{ color: 'var(--zi-text-muted)' }}>We&apos;ll use this to build a tailored packing list.</p>
+          </div>
+
+          <div className="flex flex-col gap-4 flex-1">
+            <Input
+              label="Trip name"
+              value={tripName}
+              onChange={setTripName}
+              placeholder="e.g. Lisbon with Mia"
+            />
+            <Input
+              label="Destination (optional)"
+              value={tripDestination}
+              onChange={setTripDestination}
+              placeholder="e.g. Lisbon, Portugal"
+            />
+            <div className="flex gap-3">
+              <div className="flex-1">
+                <p className="text-[13px] font-medium mb-1.5" style={{ color: 'var(--zi-text)' }}>Start date</p>
+                <input
+                  type="date"
+                  value={tripStartDate}
+                  onChange={(e) => setTripStartDate(e.target.value)}
+                  className="w-full px-3 py-2.5 text-sm outline-none"
+                  style={{ border: '1px solid var(--zi-border-strong)', borderRadius: 'var(--zi-r-lg)' }}
+                />
+              </div>
+              <div style={{ width: 90 }}>
+                <p className="text-[13px] font-medium mb-1.5" style={{ color: 'var(--zi-text)' }}>Nights</p>
+                <input
+                  type="number"
+                  min={1}
+                  value={tripNights}
+                  onChange={(e) => setTripNights(e.target.value)}
+                  className="w-full px-3 py-2.5 text-sm outline-none text-center"
+                  style={{ border: '1px solid var(--zi-border-strong)', borderRadius: 'var(--zi-r-lg)' }}
+                />
+              </div>
+            </div>
+
+            <div>
+              <p className="text-[13px] font-medium mb-2" style={{ color: 'var(--zi-text)' }}>Activities</p>
+              <div className="flex flex-wrap gap-2">
+                {activities.map((a) => {
+                  const selected = tripActivityNames.includes(a.name);
+                  return (
+                    <Chip
+                      key={a.id}
+                      selected={selected}
+                      onClick={() =>
+                        setTripActivityNames((prev) =>
+                          selected ? prev.filter((n) => n !== a.name) : [...prev, a.name]
+                        )
+                      }
+                    >
+                      {a.name}
+                    </Chip>
+                  );
+                })}
+              </div>
+            </div>
+
+            {tripFormError && <p className="text-xs" style={{ color: 'var(--zi-danger)' }}>{tripFormError}</p>}
+          </div>
+
+          <PrimaryBtn
+            onClick={() => {
+              if (!tripName.trim()) return setTripFormError('Please enter a trip name.');
+              if (!tripStartDate) return setTripFormError('Please enter a start date.');
+              setTripFormError('');
+              setStep('about-me');
+            }}
+            full
+          >
+            Next →
+          </PrimaryBtn>
+        </div>
+      )}
+
+      {/* ── About Me (both paths) ───────────────────────────────────────────── */}
+      {step === 'about-me' && (
+        <div className="flex-1 flex flex-col px-6 pt-8 pb-10 gap-5">
+          <button
+            onClick={() => setStep(path === 'trip' ? 'trip-form' : 'path-choice')}
+            className="text-sm font-medium self-start"
+            style={{ color: 'var(--zi-brand)' }}
+          >
+            ← Back
+          </button>
+
+          <div className="flex flex-col gap-1">
+            <h2 className="text-xl font-bold" style={{ color: 'var(--zi-text)' }}>A little about you</h2>
+            <p className="text-sm" style={{ color: 'var(--zi-text-muted)' }}>
+              Helps us personalise your list. You can edit this any time in Settings.
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-4 flex-1">
+            <div>
+              <p className="text-[13px] font-medium mb-1.5" style={{ color: 'var(--zi-text)' }}>Toiletries you always pack</p>
+              <textarea
+                value={toiletries}
+                onChange={(e) => setToiletries(e.target.value)}
+                placeholder="e.g. Nivea moisturiser, electric toothbrush"
+                rows={2}
+                className="w-full px-3 py-2.5 text-sm resize-none outline-none"
+                style={{ border: '1px solid var(--zi-border-strong)', borderRadius: 'var(--zi-r-lg)' }}
+              />
+            </div>
+            <div>
+              <p className="text-[13px] font-medium mb-1.5" style={{ color: 'var(--zi-text)' }}>Medications or health items</p>
+              <textarea
+                value={medications}
+                onChange={(e) => setMedications(e.target.value)}
+                placeholder="e.g. antihistamines, inhaler, vitamins"
+                rows={2}
+                className="w-full px-3 py-2.5 text-sm resize-none outline-none"
+                style={{ border: '1px solid var(--zi-border-strong)', borderRadius: 'var(--zi-r-lg)' }}
+              />
+            </div>
+            <div>
+              <p className="text-[13px] font-medium mb-1.5" style={{ color: 'var(--zi-text)' }}>
+                Anything else about your travel style{' '}
+                <span style={{ color: 'var(--zi-text-subtle)', fontWeight: 400 }}>— optional</span>
+              </p>
+              <textarea
+                value={travelNotes}
+                onChange={(e) => setTravelNotes(e.target.value)}
+                placeholder="e.g. I always overpack shoes"
+                rows={2}
+                className="w-full px-3 py-2.5 text-sm resize-none outline-none"
+                style={{ border: '1px solid var(--zi-border-strong)', borderRadius: 'var(--zi-r-lg)' }}
+              />
+            </div>
+          </div>
 
           <div className="flex flex-col gap-3">
             <PrimaryBtn
               onClick={async () => {
-                await saveAboutMe(aboutMeInput);
-                setStep('activities');
+                await saveAboutMe(formatAboutMe({ toiletries, medications, travelNotes }));
+                setStep(path === 'trip' ? 'import' : 'activities');
               }}
               full
             >
-              Next
+              Next →
             </PrimaryBtn>
             <button
-              onClick={() => { setStep('activities'); }}
+              onClick={() => setStep(path === 'trip' ? 'import' : 'activities')}
               className="text-sm font-medium py-2 text-center"
               style={{ color: 'var(--zi-text-subtle)' }}
             >
@@ -432,13 +661,17 @@ function OnboardingContent() {
         </div>
       )}
 
-      {/* ── Activities ──────────────────────────────────────────────────────── */}
+      {/* ── Activities (Path B only) ─────────────────────────────────────────── */}
       {step === 'activities' && (
-        <div className="flex-1 flex flex-col px-6 pt-10 pb-10 gap-6">
-          <div className="flex flex-col gap-2">
+        <div className="flex-1 flex flex-col px-6 pt-8 pb-10 gap-5">
+          <button onClick={() => setStep('about-me')} className="text-sm font-medium self-start" style={{ color: 'var(--zi-brand)' }}>
+            ← Back
+          </button>
+
+          <div className="flex flex-col gap-1">
             <h2 className="text-xl font-bold" style={{ color: 'var(--zi-text)' }}>What do you pack for?</h2>
-            <p className="text-sm leading-relaxed" style={{ color: 'var(--zi-text-muted)' }}>
-              Select the activities that apply to your trips. We&apos;ll use this to suggest the right items.
+            <p className="text-sm" style={{ color: 'var(--zi-text-muted)' }}>
+              Select the activities that apply to your trips.
             </p>
           </div>
 
@@ -461,7 +694,6 @@ function OnboardingContent() {
             })}
           </div>
 
-          {/* Add custom activity */}
           <div className="flex gap-2">
             <input
               value={newActivityInput}
@@ -481,18 +713,14 @@ function OnboardingContent() {
             </button>
           </div>
 
-          <p className="text-xs" style={{ color: 'var(--zi-text-subtle)' }}>
-            You can manage activities any time from the <strong>My stuff</strong> tab.
-          </p>
-
           <div className="flex-1" />
 
           <div className="flex flex-col gap-3">
-            <PrimaryBtn onClick={() => setStep('choose-path')} full>
-              Next
+            <PrimaryBtn onClick={() => setStep('import')} full>
+              Next →
             </PrimaryBtn>
             <button
-              onClick={() => setStep('choose-path')}
+              onClick={() => setStep('import')}
               className="text-sm font-medium py-2 text-center"
               style={{ color: 'var(--zi-text-subtle)' }}
             >
@@ -502,71 +730,22 @@ function OnboardingContent() {
         </div>
       )}
 
-      {/* ── Choose Path ─────────────────────────────────────────────────────── */}
-      {step === 'choose-path' && (
-        <div className="flex-1 flex flex-col px-6 pt-10 pb-10 gap-6">
-          <div className="flex flex-col gap-2">
-            <h2 className="text-xl font-bold" style={{ color: 'var(--zi-text)' }}>Build your inventory</h2>
-            <p className="text-sm leading-relaxed" style={{ color: 'var(--zi-text-muted)' }}>
-              Choose how you&apos;d like to get started.
-            </p>
-          </div>
-
-          {aiError && <p className="text-xs" style={{ color: 'var(--zi-danger)' }}>{aiError}</p>}
-
-          {aiLoading ? (
-            <div className="flex-1 flex items-center justify-center gap-3">
-              <SuitcaseIcon size={24} className="luggage-spin-icon" style={{ color: 'var(--zi-smart)' }} />
-              <span className="text-sm" style={{ color: 'var(--zi-text-muted)' }}>Generating suggestions…</span>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-3">
-              <button
-                onClick={handleGenerateAI}
-                className="text-left p-5"
-                style={{ border: '1.5px solid var(--zi-smart-lo)', borderRadius: 'var(--zi-r-lg)', background: 'var(--zi-smart-tint)' }}
-              >
-                <p className="text-base font-semibold mb-1.5" style={{ color: 'var(--zi-smart-deep)' }}>
-                  <span style={{ color: 'var(--zi-smart)', marginRight: 6 }}>✦</span>Generate with AI
-                </p>
-                <p className="text-sm" style={{ color: 'var(--zi-text-muted)' }}>
-                  We&apos;ll use your travel style to suggest a starter inventory. Takes 10 seconds.
-                </p>
-              </button>
-
-              <button
-                onClick={() => setStep('import')}
-                className="text-left p-5"
-                style={{ border: '1.5px solid var(--zi-border-strong)', borderRadius: 'var(--zi-r-lg)' }}
-              >
-                <p className="text-base font-semibold mb-1.5" style={{ color: 'var(--zi-text)' }}>
-                  Import a list
-                </p>
-                <p className="text-sm" style={{ color: 'var(--zi-text-muted)' }}>
-                  Got a packing list somewhere? Upload a photo, PDF, or text file — or just paste it in.
-                </p>
-              </button>
-            </div>
-          )}
-
-          <div className="flex-1" />
-
-          <button onClick={skip} className="text-sm font-medium py-2 text-center" style={{ color: 'var(--zi-text-subtle)' }}>
-            Skip for now
-          </button>
-        </div>
-      )}
-
-      {/* ── Import ──────────────────────────────────────────────────────────── */}
+      {/* ── Import (both paths — optional) ──────────────────────────────────── */}
       {step === 'import' && (
         <div className="flex-1 flex flex-col px-6 pt-8 pb-10 gap-5">
-          <button onClick={() => setStep('choose-path')} className="text-sm font-medium self-start" style={{ color: 'var(--zi-brand)' }}>
+          <button
+            onClick={() => setStep(path === 'trip' ? 'about-me' : 'activities')}
+            className="text-sm font-medium self-start"
+            style={{ color: 'var(--zi-brand)' }}
+          >
             ← Back
           </button>
 
           <div className="flex flex-col gap-1">
-            <h2 className="text-xl font-bold" style={{ color: 'var(--zi-text)' }}>Import a list</h2>
-            <p className="text-sm" style={{ color: 'var(--zi-text-muted)' }}>Any format works — we&apos;ll figure it out.</p>
+            <h2 className="text-xl font-bold" style={{ color: 'var(--zi-text)' }}>Got a list you&apos;ve used before?</h2>
+            <p className="text-sm" style={{ color: 'var(--zi-text-muted)' }}>
+              Paste it or upload a photo/PDF — we&apos;ll fold it into your suggestions.
+            </p>
           </div>
 
           {/* Tabs */}
@@ -609,20 +788,18 @@ function OnboardingContent() {
                   onChange={(e) => { setSelectedFile(e.target.files?.[0] ?? null); setImportError(''); }}
                 />
               </label>
-
               {importError && <p className="text-xs" style={{ color: 'var(--zi-danger)' }}>{importError}</p>}
-
               <div className="flex-1" />
-
               {importLoading ? (
                 <div className="flex items-center gap-2 justify-center py-4">
                   <SuitcaseIcon size={20} className="luggage-spin-icon" style={{ color: 'var(--zi-brand)' }} />
                   <span className="text-sm" style={{ color: 'var(--zi-text-muted)' }}>Parsing…</span>
                 </div>
               ) : (
-                <PrimaryBtn onClick={handleParseFile} disabled={!selectedFile} full>
-                  Parse list
-                </PrimaryBtn>
+                <div className="flex flex-col gap-3">
+                  <PrimaryBtn onClick={handleParseFile} disabled={!selectedFile} full>Add list</PrimaryBtn>
+                  <SecondaryBtn onClick={() => setStep('loading')} full>Skip</SecondaryBtn>
+                </div>
               )}
             </div>
           )}
@@ -634,7 +811,7 @@ function OnboardingContent() {
                 onChange={(e) => setPasteText(e.target.value)}
                 placeholder="Paste your packing list here — any format works"
                 rows={8}
-                className="w-full px-3 py-2.5 text-sm resize-none outline-none flex-1"
+                className="w-full px-3 py-2.5 text-sm resize-none outline-none"
                 style={{ border: '1px solid var(--zi-border-strong)', borderRadius: 'var(--zi-r-lg)' }}
               />
               {importError && <p className="text-xs" style={{ color: 'var(--zi-danger)' }}>{importError}</p>}
@@ -645,19 +822,27 @@ function OnboardingContent() {
                   <span className="text-sm" style={{ color: 'var(--zi-text-muted)' }}>Parsing…</span>
                 </div>
               ) : (
-                <PrimaryBtn onClick={handlePasteText} disabled={!pasteText.trim()} full>
-                  Parse list
-                </PrimaryBtn>
+                <div className="flex flex-col gap-3">
+                  <PrimaryBtn onClick={handlePasteText} disabled={!pasteText.trim()} full>Add list</PrimaryBtn>
+                  <SecondaryBtn onClick={() => setStep('loading')} full>Skip</SecondaryBtn>
+                </div>
               )}
             </div>
           )}
         </div>
       )}
 
+      {/* ── Loading / Generation ─────────────────────────────────────────────── */}
+      {step === 'loading' && (
+        <div className="flex-1 flex flex-col items-center justify-center gap-4">
+          <SuitcaseIcon size={40} className="luggage-spin-icon" style={{ color: 'var(--zi-brand)' }} />
+          <p className="text-sm" style={{ color: 'var(--zi-text-muted)' }}>Building your list…</p>
+        </div>
+      )}
+
       {/* ── Review ──────────────────────────────────────────────────────────── */}
       {step === 'review' && (
         <div className="flex-1 flex flex-col">
-          {/* Header */}
           <div className="flex items-center justify-between px-6 py-5" style={{ borderBottom: '1px solid var(--zi-border)' }}>
             <h2 className="text-xl font-bold" style={{ color: 'var(--zi-text)' }}>
               {editingItem ? 'Edit item' : 'Review items'}
@@ -717,70 +902,90 @@ function OnboardingContent() {
               </div>
             ) : (
               <>
+                {loadError && (
+                  <div className="px-3 py-2 rounded-lg text-xs" style={{ background: '#fef3c7', color: '#92400e' }}>
+                    {loadError}
+                  </div>
+                )}
                 <p className="text-xs" style={{ color: 'var(--zi-text-subtle)' }}>
-                  Uncheck items you don&apos;t want. Tap a name to edit.
+                  All items are saved by default — uncheck anything you don&apos;t want.
                 </p>
 
-                {CATEGORY_ORDER.map((cat) => {
-                  const catItems = reviewItems.filter((s) => s.category === cat);
-                  if (catItems.length === 0) return null;
-                  return (
-                    <div key={cat}>
-                      <div className="py-1.5" style={{ borderBottom: '1px solid var(--zi-border)' }}>
-                        <span className="text-xs font-semibold" style={{ color: 'var(--zi-text-subtle)' }}>{cat}</span>
+                {(() => {
+                  const essentialItems = reviewItems.filter((s) => s.activities.length === 0);
+                  const reviewActivityNames = path === 'trip' ? tripActivityNames : selectedActivityNames;
+                  const activitySections = reviewActivityNames
+                    .map((name) => ({ name, items: reviewItems.filter((s) => s.activities.includes(name)) }))
+                    .filter((section) => section.items.length > 0);
+
+                  const renderItem = (s: InventorySuggestion) => {
+                    const checked = checkedNames.has(s.name);
+                    return (
+                      <div key={s.name} className="flex items-start gap-3 py-3" style={{ borderBottom: '1px solid var(--zi-border)' }}>
+                        <button
+                          onClick={() => setCheckedNames((prev) => {
+                            const next = new Set(prev);
+                            checked ? next.delete(s.name) : next.add(s.name);
+                            return next;
+                          })}
+                          className="mt-0.5 flex-shrink-0 w-5 h-5 rounded flex items-center justify-center"
+                          style={{
+                            border: `2px solid ${checked ? 'var(--zi-brand)' : 'var(--zi-border-strong)'}`,
+                            background: checked ? 'var(--zi-brand)' : 'white',
+                          }}
+                        >
+                          {checked && (
+                            <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
+                              <path d="M1 4l2.5 2.5L9 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                          )}
+                        </button>
+                        <div className="flex-1 min-w-0">
+                          <button onClick={() => openEdit(s)} className="text-left w-full">
+                            <p className="text-sm font-medium" style={{ color: 'var(--zi-text)' }}>{s.name}</p>
+                          </button>
+                          <p className="text-xs mt-0.5 capitalize" style={{ color: 'var(--zi-text-subtle)' }}>
+                            {s.quantityType.replace('_', ' ')}
+                          </p>
+                        </div>
                       </div>
-                      {catItems.map((s) => {
-                        const checked = checkedNames.has(s.name);
-                        return (
-                          <div key={s.name} className="flex items-start gap-3 py-3" style={{ borderBottom: '1px solid var(--zi-border)' }}>
-                            <button
-                              onClick={() => setCheckedNames((prev) => {
-                                const next = new Set(prev);
-                                checked ? next.delete(s.name) : next.add(s.name);
-                                return next;
-                              })}
-                              className="mt-0.5 flex-shrink-0 w-5 h-5 rounded flex items-center justify-center"
-                              style={{
-                                border: `2px solid ${checked ? 'var(--zi-brand)' : 'var(--zi-border-strong)'}`,
-                                background: checked ? 'var(--zi-brand)' : 'white',
-                              }}
-                            >
-                              {checked && (
-                                <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
-                                  <path d="M1 4l2.5 2.5L9 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                                </svg>
-                              )}
-                            </button>
-                            <div className="flex-1 min-w-0">
-                              <button onClick={() => openEdit(s)} className="text-left w-full">
-                                <p className="text-sm font-medium" style={{ color: 'var(--zi-text)' }}>{s.name}</p>
-                              </button>
-                              <div className="flex flex-wrap gap-1.5 mt-1">
-                                <span className="text-xs px-2 py-0.5" style={{ color: 'var(--zi-text-subtle)', background: 'var(--zi-border)', borderRadius: 'var(--zi-r-pill)' }}>
-                                  {s.quantityType.replace('_', ' ')}
-                                </span>
-                                {s.activities.map((act) => (
-                                  <span key={act} className="text-xs px-2 py-0.5" style={{ color: 'var(--zi-smart-deep)', background: 'var(--zi-smart-tint)', borderRadius: 'var(--zi-r-pill)' }}>
-                                    {act}
-                                  </span>
-                                ))}
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
+                    );
+                  };
+
+                  const renderSection = (title: string, subtitle: string, items: InventorySuggestion[], key: string) => (
+                    <div key={key}>
+                      <div className="pt-2 pb-1">
+                        <p className="text-sm font-semibold" style={{ color: 'var(--zi-text)' }}>{title}</p>
+                        <p className="text-xs mt-0.5" style={{ color: 'var(--zi-text-subtle)' }}>{subtitle}</p>
+                      </div>
+                      <div style={{ borderTop: '1px solid var(--zi-border)' }}>
+                        {items.map(renderItem)}
+                      </div>
                     </div>
                   );
-                })}
+
+                  return (
+                    <>
+                      {essentialItems.length > 0 && renderSection('Essentials', 'Always packed on every trip', essentialItems, 'essentials')}
+                      {activitySections.map((section) =>
+                        renderSection(`${section.name} gear`, `Only packed when ${section.name} is on your trip`, section.items, section.name)
+                      )}
+                    </>
+                  );
+                })()}
               </>
             )}
           </div>
 
-          {/* Footer CTA */}
           {!editingItem && (
             <div className="px-6 py-5 flex flex-col gap-3" style={{ borderTop: '1px solid var(--zi-border)' }}>
               <PrimaryBtn onClick={confirmItems} disabled={confirming || checkedCount === 0} full>
-                {confirming ? 'Adding…' : `Add ${checkedCount} item${checkedCount !== 1 ? 's' : ''} to inventory`}
+                {confirming
+                  ? 'Setting up…'
+                  : path === 'trip'
+                    ? `Let's go → (${checkedCount} item${checkedCount !== 1 ? 's' : ''})`
+                    : `Build My Stuff → (${checkedCount} item${checkedCount !== 1 ? 's' : ''})`
+                }
               </PrimaryBtn>
             </div>
           )}
@@ -800,14 +1005,32 @@ export default function OnboardingPage() {
   );
 }
 
-// ── Utility ───────────────────────────────────────────────────────────────────
+// ── Utilities ─────────────────────────────────────────────────────────────────
+
+function dedupByName(items: InventorySuggestion[]): InventorySuggestion[] {
+  const seen = new Set<string>();
+  return items.filter((item) => {
+    const key = item.name.toLowerCase();
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function computeEndDate(startDate: string, nights: number): string {
+  const d = new Date(startDate + 'T00:00:00Z');
+  d.setUTCDate(d.getUTCDate() + nights);
+  return d.toISOString().slice(0, 10);
+}
 
 function fileToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => {
       const result = reader.result as string;
-      resolve(result.split(',')[1]); // strip data URI prefix
+      // Strip the data URI prefix (e.g. "data:image/jpeg;base64,")
+      const base64 = result.split(',')[1];
+      resolve(base64);
     };
     reader.onerror = reject;
     reader.readAsDataURL(file);

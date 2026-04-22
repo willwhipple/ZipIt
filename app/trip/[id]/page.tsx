@@ -193,6 +193,7 @@ export default function PackingListPage() {
   const [adHocActivityIds, setAdHocActivityIds] = useState<string[]>([]);
   const [adHocSaving, setAdHocSaving] = useState(false);
   const [adHocError, setAdHocError] = useState('');
+  const [adHocSaveToMyStuff, setAdHocSaveToMyStuff] = useState(true);
   const [showAdHocNewActivity, setShowAdHocNewActivity] = useState(false);
   const [adHocNewActivityName, setAdHocNewActivityName] = useState('');
   const [adHocActivityError, setAdHocActivityError] = useState('');
@@ -322,6 +323,7 @@ export default function PackingListPage() {
     setShowAdHocNewActivity(false);
     setAdHocNewActivityName('');
     setAdHocActivityError('');
+    setAdHocSaveToMyStuff(true);
   }
 
   async function addAdHocItem() {
@@ -360,7 +362,7 @@ export default function PackingListPage() {
         quantity: 1,
         packed: false,
         is_adhoc: true,
-        added_to_inventory: true,
+        added_to_inventory: adHocSaveToMyStuff,
       })
       .select('*, items(*)')
       .single();
@@ -816,6 +818,14 @@ export default function PackingListPage() {
                   <p className="text-xs mt-0.5" style={{ color: 'var(--zi-text-subtle)' }}>Always packed on every trip</p>
                 </div>
                 <Toggle on={adHocEssential} onChange={setAdHocEssential} />
+              </div>
+
+              <div className="flex items-center justify-between py-2" style={{ borderBottom: '1px solid var(--zi-border)' }}>
+                <div>
+                  <p className="text-sm font-medium" style={{ color: 'var(--zi-text)' }}>Save to My Stuff</p>
+                  <p className="text-xs mt-0.5" style={{ color: 'var(--zi-text-subtle)' }}>Add this item to your permanent list</p>
+                </div>
+                <Toggle on={adHocSaveToMyStuff} onChange={setAdHocSaveToMyStuff} />
               </div>
 
               {!adHocEssential && (

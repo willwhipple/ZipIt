@@ -244,7 +244,7 @@ export default function OnboardingModal({ onDismiss, onComplete }: Props) {
         {/* Header */}
         <div className="flex items-center justify-between px-6 pb-3 flex-shrink-0" style={{ borderBottom: '1px solid var(--zi-border)' }}>
           <h3 className="text-base font-semibold" style={{ color: 'var(--zi-text)' }}>
-            {step === 'choose-path' && 'Build your inventory'}
+            {step === 'choose-path' && 'Build your stuff'}
             {step === 'import' && 'Import a list'}
             {step === 'review' && 'Review items'}
           </h3>
@@ -258,7 +258,7 @@ export default function OnboardingModal({ onDismiss, onComplete }: Props) {
           {step === 'choose-path' && (
             <>
               <p className="text-sm" style={{ color: 'var(--zi-text-muted)' }}>
-                Your inventory is the heart of Zip It — add some starter items to get going.
+                Your stuff is the heart of Zip It — add some starter items to get going.
               </p>
               {aiError && <p className="text-xs" style={{ color: 'var(--zi-danger)' }}>{aiError}</p>}
 
@@ -278,7 +278,7 @@ export default function OnboardingModal({ onDismiss, onComplete }: Props) {
                       <span style={{ color: 'var(--zi-smart)', marginRight: 6 }}>✦</span>Generate with AI
                     </p>
                     <p className="text-xs" style={{ color: 'var(--zi-text-muted)' }}>
-                      We&apos;ll use your travel style to suggest a starter inventory. Takes 10 seconds.
+                      We&apos;ll use your travel style to suggest a starter list. Takes 10 seconds.
                     </p>
                   </button>
 
@@ -488,7 +488,7 @@ export default function OnboardingModal({ onDismiss, onComplete }: Props) {
                   })}
 
                   <PrimaryBtn onClick={confirmItems} disabled={confirming || checkedCount === 0} full>
-                    {confirming ? 'Adding…' : `Add ${checkedCount} item${checkedCount !== 1 ? 's' : ''} to inventory`}
+                    {confirming ? 'Adding…' : `Add ${checkedCount} item${checkedCount !== 1 ? 's' : ''} to My Stuff`}
                   </PrimaryBtn>
                   <SecondaryBtn onClick={onDismiss} full>Skip for now</SecondaryBtn>
                 </>
