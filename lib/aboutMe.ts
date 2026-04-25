@@ -1,35 +1,43 @@
 export type StructuredAboutMe = {
-  toiletries: string;
-  medications: string;
-  travelNotes: string;
+  toiletriesAndMeds: string;
+  neverWithout: string;
 };
 
-export function formatAboutMe({ toiletries, medications, travelNotes }: StructuredAboutMe): string {
+export function formatAboutMe({ toiletriesAndMeds, neverWithout }: StructuredAboutMe): string {
   const parts: string[] = [];
-  if (toiletries.trim()) parts.push(`Toiletries: ${toiletries.trim()}`);
-  if (medications.trim()) parts.push(`Medications: ${medications.trim()}`);
-  if (travelNotes.trim()) parts.push(`Travel notes: ${travelNotes.trim()}`);
+  if (toiletriesAndMeds.trim()) parts.push(`Toiletries & medications: ${toiletriesAndMeds.trim()}`);
+  if (neverWithout.trim()) parts.push(`Never without: ${neverWithout.trim()}`);
   return parts.join('\n');
 }
 
 export function parseAboutMe(stored: string | null): StructuredAboutMe {
-  if (!stored) return { toiletries: '', medications: '', travelNotes: '' };
+  if (!stored) return { toiletriesAndMeds: '', neverWithout: '' };
 
-  // Detect structured format by presence of the first section label
-  if (!stored.startsWith('Toiletries:')) {
-    return { toiletries: '', medications: '', travelNotes: stored };
+  // New structured format
+  if (stored.startsWith('Toiletries & medications:')) {
+    const lines = stored.split('\n');
+    let toiletriesAndMeds = '';
+    let neverWithout = '';
+    for (const line of lines) {
+      if (line.startsWith('Toiletries & medications: ')) toiletriesAndMeds = line.slice('Toiletries & medications: '.length);
+      else if (line.startsWith('Never without: ')) neverWithout = line.slice('Never without: '.length);
+    }
+    return { toiletriesAndMeds, neverWithout };
   }
 
-  const lines = stored.split('\n');
-  let toiletries = '';
-  let medications = '';
-  let travelNotes = '';
-
-  for (const line of lines) {
-    if (line.startsWith('Toiletries: ')) toiletries = line.slice('Toiletries: '.length);
-    else if (line.startsWith('Medications: ')) medications = line.slice('Medications: '.length);
-    else if (line.startsWith('Travel notes: ')) travelNotes = line.slice('Travel notes: '.length);
+  // Legacy format (old three-field structure) — merge toiletries + medications, put travel notes into neverWithout
+  if (stored.startsWith('Toiletries:')) {
+    const lines = stored.split('\n');
+    const parts: string[] = [];
+    let travelNotes = '';
+    for (const line of lines) {
+      if (line.startsWith('Toiletries: ')) parts.push(line.slice('Toiletries: '.length));
+      else if (line.startsWith('Medications: ')) parts.push(line.slice('Medications: '.length));
+      else if (line.startsWith('Travel notes: ')) travelNotes = line.slice('Travel notes: '.length);
+    }
+    return { toiletriesAndMeds: parts.join(', '), neverWithout: travelNotes };
   }
 
-  return { toiletries, medications, travelNotes };
+  // Unstructured legacy free-text — put everything in neverWithout
+  return { toiletriesAndMeds: '', neverWithout: stored };
 }

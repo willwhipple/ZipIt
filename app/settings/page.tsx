@@ -29,9 +29,8 @@ export default function SettingsPage() {
   // Local form state
   const [tempUnit, setTempUnit] = useState<TemperatureUnit>('celsius');
   const [laundryStyle, setLaundryStyle] = useState<LaundryStyle>('moderate');
-  const [toiletries, setToiletries] = useState('');
-  const [medications, setMedications] = useState('');
-  const [travelNotes, setTravelNotes] = useState('');
+  const [toiletriesAndMeds, setToiletriesAndMeds] = useState('');
+  const [neverWithout, setNeverWithout] = useState('');
 
   useEffect(() => {
     async function fetchPrefs() {
@@ -46,9 +45,8 @@ export default function SettingsPage() {
         setTempUnit(data.temperature_unit as TemperatureUnit);
         setLaundryStyle(data.laundry_style as LaundryStyle);
         const parsed = parseAboutMe(data.about_me ?? null);
-        setToiletries(parsed.toiletries);
-        setMedications(parsed.medications);
-        setTravelNotes(parsed.travelNotes);
+        setToiletriesAndMeds(parsed.toiletriesAndMeds);
+        setNeverWithout(parsed.neverWithout);
       }
       setLoading(false);
     }
@@ -63,7 +61,7 @@ export default function SettingsPage() {
     const updates = {
       temperature_unit: tempUnit,
       laundry_style: laundryStyle,
-      about_me: formatAboutMe({ toiletries, medications, travelNotes }) || null,
+      about_me: formatAboutMe({ toiletriesAndMeds, neverWithout }) || null,
       updated_at: new Date().toISOString(),
     };
 
@@ -152,29 +150,20 @@ export default function SettingsPage() {
             </p>
           </div>
           <div>
-            <p className="text-xs font-medium mb-1.5" style={{ color: 'var(--zi-text)' }}>Toiletries you always pack</p>
+            <p className="text-xs font-medium mb-1.5" style={{ color: 'var(--zi-text)' }}>Toiletries & medications</p>
             <Textarea
-              value={toiletries}
-              onChange={setToiletries}
-              placeholder="e.g. Nivea moisturiser, electric toothbrush"
+              value={toiletriesAndMeds}
+              onChange={setToiletriesAndMeds}
+              placeholder="e.g. Nivea moisturiser, electric toothbrush, antihistamines"
               rows={2}
             />
           </div>
           <div>
-            <p className="text-xs font-medium mb-1.5" style={{ color: 'var(--zi-text)' }}>Medications or health items</p>
+            <p className="text-xs font-medium mb-1.5" style={{ color: 'var(--zi-text)' }}>What are some things you never travel without? <span style={{ color: 'var(--zi-text-subtle)' }}>— optional</span></p>
             <Textarea
-              value={medications}
-              onChange={setMedications}
-              placeholder="e.g. antihistamines, inhaler, vitamins"
-              rows={2}
-            />
-          </div>
-          <div>
-            <p className="text-xs font-medium mb-1.5" style={{ color: 'var(--zi-text)' }}>Anything else about your travel style <span style={{ color: 'var(--zi-text-subtle)' }}>— optional</span></p>
-            <Textarea
-              value={travelNotes}
-              onChange={setTravelNotes}
-              placeholder="e.g. I always overpack shoes"
+              value={neverWithout}
+              onChange={setNeverWithout}
+              placeholder="e.g. noise-cancelling headphones, travel pillow"
               rows={2}
             />
           </div>

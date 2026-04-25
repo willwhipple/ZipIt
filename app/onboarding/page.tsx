@@ -13,7 +13,6 @@ import { PrimaryBtn, SecondaryBtn } from '@/components/ui/Button';
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
-const CATEGORY_ORDER: CategoryType[] = ['Clothing', 'Shoes', 'Toiletries', 'Accessories', 'Equipment'];
 const CATEGORIES: CategoryType[] = ['Clothing', 'Shoes', 'Toiletries', 'Accessories', 'Equipment'];
 const QUANTITY_TYPES: { value: QuantityType; label: string; description: string }[] = [
   { value: 'fixed', label: 'Fixed', description: 'Always bring exactly 1' },
@@ -62,9 +61,8 @@ function OnboardingContent() {
   const [initDone, setInitDone] = useState(false);
 
   // Structured About Me (shared between about-me step and settings)
-  const [toiletries, setToiletries] = useState('');
-  const [medications, setMedications] = useState('');
-  const [travelNotes, setTravelNotes] = useState('');
+  const [toiletriesAndMeds, setToiletriesAndMeds] = useState('');
+  const [neverWithout, setNeverWithout] = useState('');
 
   // Path A — trip form
   const [tripName, setTripName] = useState('');
@@ -97,6 +95,8 @@ function OnboardingContent() {
   const [editName, setEditName] = useState('');
   const [editCategory, setEditCategory] = useState<CategoryType>('Clothing');
   const [editQty, setEditQty] = useState<QuantityType>('fixed');
+  const [editActivities, setEditActivities] = useState<string[]>([]);
+  const [editIsEssential, setEditIsEssential] = useState(false);
   const [confirming, setConfirming] = useState(false);
 
   useEffect(() => {
@@ -124,9 +124,8 @@ function OnboardingContent() {
       if (prefsResult.data) {
         setPrefsId(prefsResult.data.id);
         const parsed = parseAboutMe(prefsResult.data.about_me ?? null);
-        setToiletries(parsed.toiletries);
-        setMedications(parsed.medications);
-        setTravelNotes(parsed.travelNotes);
+        setToiletriesAndMeds(parsed.toiletriesAndMeds);
+        setNeverWithout(parsed.neverWithout);
 
         if (prefsResult.data.onboarding_completed && !isRedo) {
           router.replace('/');
@@ -211,7 +210,7 @@ function OnboardingContent() {
     }));
 
     const combinedItems = dedupByName([...templateItems, ...importedItems]);
-    const aboutMeText = formatAboutMe({ toiletries, medications, travelNotes });
+    const aboutMeText = formatAboutMe({ toiletriesAndMeds, neverWithout });
     const activitySet = new Set(activityNames);
 
     try {
@@ -301,11 +300,14 @@ function OnboardingContent() {
     setEditName(s.name);
     setEditCategory(s.category);
     setEditQty(s.quantityType);
+    setEditActivities(s.activities);
+    setEditIsEssential(s.activities.length === 0);
   }
 
   function saveEdit() {
     if (!editingItem || !editName.trim()) return;
-    const updated: InventorySuggestion = { ...editingItem, name: editName.trim(), category: editCategory, quantityType: editQty };
+    const newActivities = editIsEssential ? [] : editActivities;
+    const updated: InventorySuggestion = { ...editingItem, name: editName.trim(), category: editCategory, quantityType: editQty, activities: newActivities };
     setReviewItems((prev) => prev.map((s) => (s.name === editingItem.name ? updated : s)));
     setCheckedNames((prev) => {
       const next = new Set(prev);
@@ -399,7 +401,7 @@ function OnboardingContent() {
               {SLIDES[slideIndex].emoji}
             </div>
             <div className="flex flex-col gap-2">
-              <h2 className="text-xl font-bold" style={{ color: 'var(--zi-text)' }}>
+              <h2 className="text-xl font-bold" style={{ color: 'var(--zi-brand)' }}>
                 {SLIDES[slideIndex].heading}
               </h2>
               <p className="text-sm leading-relaxed" style={{ color: 'var(--zi-text-muted)' }}>
@@ -453,7 +455,7 @@ function OnboardingContent() {
       {step === 'path-choice' && (
         <div className="flex-1 flex flex-col px-6 pt-10 pb-10 gap-6">
           <div className="flex flex-col gap-2">
-            <h2 className="text-xl font-bold" style={{ color: 'var(--zi-text)' }}>Let&apos;s get you set up</h2>
+            <h2 className="text-xl font-bold" style={{ color: 'var(--zi-brand)' }}>Let&apos;s get you set up</h2>
             <p className="text-sm leading-relaxed" style={{ color: 'var(--zi-text-muted)' }}>
               What would you like to do first?
             </p>
@@ -503,7 +505,7 @@ function OnboardingContent() {
           </button>
 
           <div className="flex flex-col gap-1">
-            <h2 className="text-xl font-bold" style={{ color: 'var(--zi-text)' }}>Tell us about your trip</h2>
+            <h2 className="text-xl font-bold" style={{ color: 'var(--zi-brand)' }}>Tell us about your trip</h2>
             <p className="text-sm" style={{ color: 'var(--zi-text-muted)' }}>We&apos;ll use this to build a tailored packing list.</p>
           </div>
 
@@ -595,7 +597,7 @@ function OnboardingContent() {
           </button>
 
           <div className="flex flex-col gap-1">
-            <h2 className="text-xl font-bold" style={{ color: 'var(--zi-text)' }}>A little about you</h2>
+            <h2 className="text-xl font-bold" style={{ color: 'var(--zi-brand)' }}>A little about you</h2>
             <p className="text-sm" style={{ color: 'var(--zi-text-muted)' }}>
               Helps us personalise your list. You can edit this any time in Settings.
             </p>
@@ -603,22 +605,11 @@ function OnboardingContent() {
 
           <div className="flex flex-col gap-4 flex-1">
             <div>
-              <p className="text-[13px] font-medium mb-1.5" style={{ color: 'var(--zi-text)' }}>Toiletries you always pack</p>
+              <p className="text-[13px] font-medium mb-1.5" style={{ color: 'var(--zi-text)' }}>Toiletries & medications</p>
               <textarea
-                value={toiletries}
-                onChange={(e) => setToiletries(e.target.value)}
-                placeholder="e.g. Nivea moisturiser, electric toothbrush"
-                rows={2}
-                className="w-full px-3 py-2.5 text-sm resize-none outline-none"
-                style={{ border: '1px solid var(--zi-border-strong)', borderRadius: 'var(--zi-r-lg)' }}
-              />
-            </div>
-            <div>
-              <p className="text-[13px] font-medium mb-1.5" style={{ color: 'var(--zi-text)' }}>Medications or health items</p>
-              <textarea
-                value={medications}
-                onChange={(e) => setMedications(e.target.value)}
-                placeholder="e.g. antihistamines, inhaler, vitamins"
+                value={toiletriesAndMeds}
+                onChange={(e) => setToiletriesAndMeds(e.target.value)}
+                placeholder="e.g. Nivea moisturiser, electric toothbrush, antihistamines"
                 rows={2}
                 className="w-full px-3 py-2.5 text-sm resize-none outline-none"
                 style={{ border: '1px solid var(--zi-border-strong)', borderRadius: 'var(--zi-r-lg)' }}
@@ -626,13 +617,13 @@ function OnboardingContent() {
             </div>
             <div>
               <p className="text-[13px] font-medium mb-1.5" style={{ color: 'var(--zi-text)' }}>
-                Anything else about your travel style{' '}
+                What are some things you never travel without?{' '}
                 <span style={{ color: 'var(--zi-text-subtle)', fontWeight: 400 }}>— optional</span>
               </p>
               <textarea
-                value={travelNotes}
-                onChange={(e) => setTravelNotes(e.target.value)}
-                placeholder="e.g. I always overpack shoes"
+                value={neverWithout}
+                onChange={(e) => setNeverWithout(e.target.value)}
+                placeholder="e.g. noise-cancelling headphones, travel pillow"
                 rows={2}
                 className="w-full px-3 py-2.5 text-sm resize-none outline-none"
                 style={{ border: '1px solid var(--zi-border-strong)', borderRadius: 'var(--zi-r-lg)' }}
@@ -643,7 +634,7 @@ function OnboardingContent() {
           <div className="flex flex-col gap-3">
             <PrimaryBtn
               onClick={async () => {
-                await saveAboutMe(formatAboutMe({ toiletries, medications, travelNotes }));
+                await saveAboutMe(formatAboutMe({ toiletriesAndMeds, neverWithout }));
                 setStep(path === 'trip' ? 'import' : 'activities');
               }}
               full
@@ -669,7 +660,7 @@ function OnboardingContent() {
           </button>
 
           <div className="flex flex-col gap-1">
-            <h2 className="text-xl font-bold" style={{ color: 'var(--zi-text)' }}>What do you pack for?</h2>
+            <h2 className="text-xl font-bold" style={{ color: 'var(--zi-brand)' }}>What do you pack for?</h2>
             <p className="text-sm" style={{ color: 'var(--zi-text-muted)' }}>
               Select the activities that apply to your trips.
             </p>
@@ -742,7 +733,7 @@ function OnboardingContent() {
           </button>
 
           <div className="flex flex-col gap-1">
-            <h2 className="text-xl font-bold" style={{ color: 'var(--zi-text)' }}>Got a list you&apos;ve used before?</h2>
+            <h2 className="text-xl font-bold" style={{ color: 'var(--zi-brand)' }}>Got a list you&apos;ve used before?</h2>
             <p className="text-sm" style={{ color: 'var(--zi-text-muted)' }}>
               Paste it or upload a photo/PDF — we&apos;ll fold it into your suggestions.
             </p>
@@ -844,7 +835,7 @@ function OnboardingContent() {
       {step === 'review' && (
         <div className="flex-1 flex flex-col">
           <div className="flex items-center justify-between px-6 py-5" style={{ borderBottom: '1px solid var(--zi-border)' }}>
-            <h2 className="text-xl font-bold" style={{ color: 'var(--zi-text)' }}>
+            <h2 className="text-xl font-bold" style={{ color: 'var(--zi-brand)' }}>
               {editingItem ? 'Edit item' : 'Review items'}
             </h2>
             {!editingItem && (
@@ -898,6 +889,48 @@ function OnboardingContent() {
                     ))}
                   </div>
                 </div>
+                <div>
+                  <p className="text-[13px] font-medium mb-2" style={{ color: 'var(--zi-text)' }}>Role</p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const next = !editIsEssential;
+                      setEditIsEssential(next);
+                      if (next) setEditActivities([]);
+                    }}
+                    className="flex items-center gap-3 w-full px-4 py-3 mb-3"
+                    style={{
+                      borderRadius: 'var(--zi-r-lg)',
+                      border: `1px solid ${editIsEssential ? '#16a34a' : 'var(--zi-border-strong)'}`,
+                      background: editIsEssential ? '#dcfce7' : 'transparent',
+                    }}
+                  >
+                    <div className="w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center"
+                      style={{ borderColor: editIsEssential ? '#16a34a' : 'var(--zi-border-strong)' }}>
+                      {editIsEssential && <div className="w-2 h-2 rounded-full" style={{ background: '#16a34a' }} />}
+                    </div>
+                    <div className="text-left">
+                      <p className="text-sm font-medium" style={{ color: 'var(--zi-text)' }}>Essential</p>
+                      <p className="text-xs" style={{ color: 'var(--zi-text-subtle)' }}>Always packed on every trip</p>
+                    </div>
+                  </button>
+
+                  <div className="mt-1">
+                    <p className="text-xs font-medium mb-2" style={{ color: 'var(--zi-text-subtle)' }}>Tagged activities</p>
+                    <div className="flex flex-wrap gap-2">
+                      {activities.map((a) => {
+                        const sel = editActivities.includes(a.name);
+                        return (
+                          <Chip key={a.id} selected={sel} onClick={() => {
+                            setEditIsEssential(false);
+                            setEditActivities((prev) => sel ? prev.filter((n) => n !== a.name) : [...prev, a.name]);
+                          }}>{a.name}</Chip>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+
                 <PrimaryBtn onClick={saveEdit} disabled={!editName.trim()} full>Save</PrimaryBtn>
               </div>
             ) : (
@@ -945,18 +978,23 @@ function OnboardingContent() {
                             <p className="text-sm font-medium" style={{ color: 'var(--zi-text)' }}>{s.name}</p>
                           </button>
                           <p className="text-xs mt-0.5 capitalize" style={{ color: 'var(--zi-text-subtle)' }}>
-                            {s.quantityType.replace('_', ' ')}
+                            {s.category} · {s.quantityType.replace('_', ' ')}
                           </p>
                         </div>
                       </div>
                     );
                   };
 
-                  const renderSection = (title: string, subtitle: string, items: InventorySuggestion[], key: string) => (
+                  const renderSection = (isEssentials: boolean, name: string, items: InventorySuggestion[], key: string) => (
                     <div key={key}>
-                      <div className="pt-2 pb-1">
-                        <p className="text-sm font-semibold" style={{ color: 'var(--zi-text)' }}>{title}</p>
-                        <p className="text-xs mt-0.5" style={{ color: 'var(--zi-text-subtle)' }}>{subtitle}</p>
+                      <div className="pt-5 pb-2">
+                        <p className="text-xs font-semibold"
+                          style={{ color: isEssentials ? 'var(--zi-success)' : 'var(--zi-brand)' }}>
+                          {isEssentials ? 'Essentials' : `${name} gear`}
+                        </p>
+                        <p className="text-xs mt-0.5" style={{ color: 'var(--zi-text-subtle)' }}>
+                          {isEssentials ? 'Always packed on every trip' : `Only packed when ${name} is on your trip`}
+                        </p>
                       </div>
                       <div style={{ borderTop: '1px solid var(--zi-border)' }}>
                         {items.map(renderItem)}
@@ -966,9 +1004,9 @@ function OnboardingContent() {
 
                   return (
                     <>
-                      {essentialItems.length > 0 && renderSection('Essentials', 'Always packed on every trip', essentialItems, 'essentials')}
+                      {essentialItems.length > 0 && renderSection(true, 'Essentials', essentialItems, 'essentials')}
                       {activitySections.map((section) =>
-                        renderSection(`${section.name} gear`, `Only packed when ${section.name} is on your trip`, section.items, section.name)
+                        renderSection(false, section.name, section.items, section.name)
                       )}
                     </>
                   );
