@@ -119,6 +119,7 @@ export default function EditItemPage() {
       );
     }
 
+    router.refresh();
     router.back();
   }
 

@@ -101,6 +101,7 @@ export default function CreateItemPage() {
       );
     }
 
+    router.refresh();
     router.back();
   }
 
