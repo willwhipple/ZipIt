@@ -6,7 +6,6 @@ A personal packing list web app (built with Next.js).
 The app is called **Zip It**.
 The core idea: maintain a master inventory of items tagged to activities,
 describe a trip, and get a tailored packing list generated instantly.
-No AI in Stage 1 — just clean set logic and a great mobile web experience.
 
 ---
 
@@ -19,6 +18,7 @@ No AI in Stage 1 — just clean set logic and a great mobile web experience.
 - When you're about to make an architectural decision, flag it and ask
 - Build one layer at a time: data → logic → UI. Don't jump ahead.
 - Check in after completing each logical unit of work before moving on
+- After completing any change that affects the app's structure, data model, business logic, screens, or file layout, update the relevant sections of `CLAUDE.md` to reflect the new state — keep it current so it stays the authoritative reference
 
 ---
 
@@ -41,42 +41,24 @@ No AI in Stage 1 — just clean set logic and a great mobile web experience.
 | Navigation | Next.js App Router (file-based) |
 | Styling | Tailwind CSS v3 |
 | Database | Supabase (Postgres) |
-| Auth | None in Stage 1.0 — added in Stage 1.1 |
+| Auth | Supabase (email/password + password reset) |
 | AI | Google Gemini (`gemini-2.5-flash`) |
+| Weather | Open-Meteo (forecast ≤16 days; climatology beyond 16 days) |
 | Deployment | Vercel (free tier) |
 
 ---
 
-## Stage Roadmap
+## What's Built
 
-**Stage 1.0 — Core**
-Fully working app, single user, no auth. Ship something usable.
-
-**Stage 1.1 — Auth**
-Add Supabase auth. Add `user_id` to items, trips, activities tables.
-Enable Row Level Security. Data follows the user across devices.
-
-**Stage 2 — Smarts (complete)**
-- ~~Weather pull based on destination + dates~~
-- ~~Trip duration logic (auto-scale quantities)~~
-- ~~Conditional item rules~~ *(descoped → issues.md)*
-- ~~Lightweight trip history~~
-- ~~"Review later" queue for ad-hoc items~~ *(descoped → issues.md)*
-
-**Stage 3 — AI Layer (complete)**
-- ~~`gemini-2.5-flash` integration~~
-- ~~AI-generated packing suggestions based on trip context~~
-- ~~Natural language trip creation~~
-
-
-**Out of scope for Stage 1.0:**
-- Auth / multi-user
-- Weather API
-- AI / Gemini
-- Reminders
-- Rules engine
-- Trip history
-- Sharing
+- Multi-user app with Supabase email/password auth and RLS (`user_id` via `DEFAULT auth.uid()`)
+- Inventory management (items, activities, categories, essential flag, quantity types)
+- Trip creation with natural language parsing (Gemini)
+- Packing list generation (activity matching, essential items, laundry cap)
+- Weather integration (Open-Meteo, shown on trip detail)
+- AI packing suggestions and AI inventory prefill (Gemini 2.5 Flash)
+- Packing list import from text, image, or PDF
+- Onboarding wizard for new users
+- Trip history, settings, PWA support
 
 ---
 
@@ -134,6 +116,7 @@ create table items (
   name text not null,
   category category_type not null,
   quantity_type quantity_type not null default 'fixed',
+  essential boolean not null default false,
   created_at timestamptz default now()
 );
 
@@ -148,6 +131,7 @@ create table item_activities (
 create table trips (
   id uuid primary key default gen_random_uuid(),
   name text not null,
+  destination text,
   start_date date not null,
   end_date date not null,
   accommodation_type accommodation_type not null,
@@ -177,14 +161,22 @@ create table packing_list_entries (
   created_at timestamptz default now(),
   unique (trip_id, item_id)
 );
+
+-- Per-user preferences (one row per user, seeded on first sign-in)
+create table user_preferences (
+  id uuid primary key default gen_random_uuid(),
+  temperature_unit text not null default 'celsius', -- 'celsius' | 'fahrenheit'
+  laundry_style text not null default 'moderate',   -- 'frequent' | 'moderate' | 'infrequent'
+  about_me text,
+  onboarding_completed boolean not null default false,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
 ```
 
-### Stage 1.1 additions (auth — do not build yet)
-When auth is added, the following columns are appended to `items`, `trips`, and `activities`:
-```sql
-user_id uuid references auth.users(id)
-```
-Row Level Security policies are then enabled on all tables.
+### Auth & RLS
+
+Row Level Security is enabled on all tables. The `user_id` column on `items`, `activities`, `trips`, and `user_preferences` uses `DEFAULT auth.uid()` — app code never passes `user_id` explicitly. Join tables (`item_activities`, `trip_activities`, `packing_list_entries`) are protected via parent-row EXISTS checks. New users get default activities seeded by an `after insert on auth.users` trigger.
 
 ---
 
@@ -193,13 +185,28 @@ Row Level Security policies are then enabled on all tables.
 ### Packing List Generation
 Triggered when a trip is created.
 
-1. Fetch all activities selected for the trip
-2. Find all items WHERE at least one of item's activities intersects trip's activities
-3. For each matching item, calculate quantity:
+1. Fetch the trip's dates and `laundry_available` flag
+2. Fetch the user's `laundry_style` from `user_preferences` (defaults to `moderate`)
+3. Include all **essential** items (`essential = true`) unconditionally
+4. Find non-essential items where at least one activity intersects the trip's activities
+5. Merge and deduplicate by item_id
+6. For each included item, calculate quantity:
    - `fixed` → 1
-   - `per_night` → number of nights (end_date - start_date)
-   - `per_activity` → count of activities that match between item and trip
-4. Insert one `packing_list_entry` per item with calculated quantity
+   - `per_night` → number of nights; if `laundry_available`, cap by laundry style (see Laundry Cap below); floor to 1
+   - `per_activity` → count of overlapping activities (essential items with no activities default to 1)
+7. Batch-insert one `packing_list_entry` per item
+
+### Essential Items
+Items with `essential = true` are automatically included on every packing list regardless of which activities are selected for the trip.
+
+### Laundry Cap
+When `laundry_available = true`, `per_night` quantities are capped based on the user's `laundry_style` preference:
+
+| Style | Cap |
+|---|---|
+| frequent | 3 nights |
+| moderate | 5 nights |
+| infrequent | 6 nights |
 
 ### Trip Duration
 Always derived: `end_date - start_date = nights`. Never stored.
@@ -219,7 +226,7 @@ Items added directly to a trip (not from inventory):
 - `is_adhoc = true` on the packing_list_entry
 - After adding, prompt: "Add to your master inventory?"
   - **Yes** → open Add Item flow pre-filled with name
-  - **Later** → `added_to_inventory = null`, surfaced in Stage 2 review queue
+  - **Later** → `added_to_inventory = null`, surfaced in the "Review Later" queue (not yet built)
   - **No** → `added_to_inventory = false`, never asked again for this item
 
 ---
@@ -261,16 +268,36 @@ Items added directly to a trip (not from inventory):
 - Tap activity → edit name or delete
 - Cannot delete an activity that has items assigned (show warning)
 
+### 7. Login
+- Email/password sign-in and sign-up
+- Forgot password → email reset link → `/auth/reset`
+- Unauthenticated users are redirected here by middleware
+
+### 8. Onboarding
+- Shown to new users after first sign-in (`onboarding_completed = false`)
+- Multi-step: walkthrough → About Me → activities review → choose path (AI prefill or manual) → review
+- AI prefill calls `suggest_inventory_items` with the user's `about_me`
+- Supports importing an existing packing list (text or image/PDF via `parse_packing_list`)
+- Sets `onboarding_completed = true` on completion
+
+### 9. Trip History
+- Lists all archived trips (manually archived or past end date)
+- Tap a trip to view its read-only packing list
+
+### 10. Settings
+- Toggle temperature unit (°C / °F)
+- Set laundry style (Frequent / Moderate / Infrequent)
+- Edit "About Me" (used by AI for personalised suggestions)
+- Sign out button
+
 ---
 
 ## User Flows
 
 ### First Time Setup
 ```
-Open app (no inventory)
-→ Empty state prompts inventory setup
-→ Activities: review preloaded list, add/remove
-→ Items: add items (name, category, activities, quantity type)
+Sign up → email confirmation → sign in
+→ Onboarding wizard (About Me → activities → AI prefill or manual import)
 → Inventory ready → home screen
 ```
 
@@ -314,14 +341,30 @@ Packing List → FAB → "Add Item"
 
 ```
 app/
-  layout.tsx              # Root layout + fixed bottom nav (Home | Inventory)
+  layout.tsx              # Root layout (PWA metadata, font)
+  ClientLayout.tsx        # Client wrapper: auth guard, bottom nav, onboarding redirect
   page.tsx                # Home screen
-  globals.css             # Tailwind directives
+  globals.css             # Tailwind directives + CSS custom properties
+  manifest.ts             # PWA manifest
+  login/
+    page.tsx              # Sign in / sign up / forgot password
+  onboarding/
+    page.tsx              # New-user onboarding wizard
+  settings/
+    page.tsx              # User preferences + sign out
+  auth/
+    callback/
+      route.ts            # OAuth / email-link callback handler
+    reset/
+      page.tsx            # Password reset (after email link)
   trip/
     create/
-      page.tsx            # Create trip form
+      page.tsx            # Create trip form (supports NL parsing)
     [id]/
-      page.tsx            # Packing list for a trip
+      page.tsx            # Packing list + weather + AI suggestions
+  trips/
+    history/
+      page.tsx            # Archived trip list
   inventory/
     page.tsx              # Item list grouped by category
     item/
@@ -333,12 +376,22 @@ app/
     page.tsx              # Activities manager
   api/
     ai/
-      route.ts            # AI suggestion endpoint
+      route.ts            # AI endpoint (suggest_items, parse_trip_description,
+                          #   suggest_inventory_items, parse_packing_list)
 
 lib/
-  supabase.ts             # Supabase client
+  supabase/
+    client.ts             # Browser Supabase client
+    server.ts             # Server Supabase client (API routes + server components)
   generation.ts           # Packing list generation logic
-  gemini.ts               # Gemini API client
+  generation.test.ts      # Vitest unit tests
+  gemini.ts               # Gemini API client + prompt helpers
+  gemini.test.ts          # Vitest unit tests
+
+middleware.ts             # Session refresh + auth redirect guard
+
+components/               # Shared UI components (AppLogo, LuggageSpinner, etc.)
+  ui/                     # Reusable primitives (Button, Chip, Input, etc.)
 
 types/
   index.ts                # Shared TypeScript types matching DB schema
@@ -353,13 +406,19 @@ NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 # Server-only — never expose to client
 GEMINI_API_KEY=
+# Optional — used by Vitest to skip live API calls in CI
+SKIP_LIVE_API_TESTS=true
 ```
 
 ---
 
 ## Future / Parking Lot
-- Item-level reminders (e.g. remind me to pack passport night before)
-- Default inventory generator
-- Trip sharing with travel companions
-- "Review later" queue for ad-hoc items (→ issues.md)
-- Conditional item rules engine (→ issues.md)
+
+- **Conditional Item Rules Engine** — conditionally include items based on trip context (e.g. "bring neck pillow when flight > 4 hrs"); requires a new `rules` table and an evaluation pass during generation
+- **"Review Later" Queue** — surface items where `added_to_inventory = null` so the user can decide to add or dismiss them; could live as a banner on the Inventory screen
+- **Trip Templates** — save a trip configuration (activities, accommodation, carry-on, laundry) to reuse for future trips
+- **AI Gemini Free Tier Quota** — detect 429s from Gemini and show a distinct "AI is busy" message rather than a generic error
+- **Calendar Integration** — pull events during trip dates and factor them into activity selection or suggestions
+- **Travel Mode** — add "How are you getting there?" to Create Trip (Flying / Train / Driving / Other); Driving = no luggage restrictions
+- **Item-level reminders** — remind user to pack specific items (e.g. passport) the night before departure
+- **Trip sharing** — share a packing list with travel companions
